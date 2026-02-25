@@ -575,6 +575,120 @@ def listar_tags():
     
     return jsonify(sorted([t.strip() for t in todas_tags if t.strip()]))
 
+@app.route('/api/exportar/excel')
+@login_required
+def exportar_excel():
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from io import BytesIO
+    from flask import send_file
+    
+    conn = get_db()
+    receitas = conn.execute('SELECT * FROM receitas ORDER BY data DESC').fetchall()
+    gastos = conn.execute('SELECT * FROM gastos ORDER BY data DESC').fetchall()
+    metas = conn.execute('SELECT * FROM metas ORDER BY data_inicio DESC').fetchall()
+    conn.close()
+    
+    wb = Workbook()
+    
+    # Aba Receitas
+    ws_receitas = wb.active
+    ws_receitas.title = "Receitas"
+    ws_receitas.append(['Data', 'Descrição', 'Valor', 'Tipo', 'Notas', 'Tags'])
+    for r in receitas:
+        ws_receitas.append([r['data'], r['descricao'], r['valor'], r['tipo'], r['notas'], r['tags']])
+    
+    # Aba Gastos
+    ws_gastos = wb.create_sheet("Gastos")
+    ws_gastos.append(['Data', 'Descrição', 'Valor', 'Categoria', 'Notas', 'Tags'])
+    for g in gastos:
+        ws_gastos.append([g['data'], g['descricao'], g['valor'], g['categoria'], g['notas'], g['tags']])
+    
+    # Aba Metas
+    ws_metas = wb.create_sheet("Metas")
+    ws_metas.append(['Título', 'Valor Alvo', 'Valor Atual', 'Data Início', 'Data Fim', 'Tipo', 'Ativo'])
+    for m in metas:
+        ws_metas.append([m['titulo'], m['valor_alvo'], m['valor_atual'], m['data_inicio'], m['data_fim'], m['tipo'], 'Sim' if m['ativo'] else 'Não'])
+    
+    # Estilizar cabeçalhos
+    for ws in [ws_receitas, ws_gastos, ws_metas]:
+        for cell in ws[1]:
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="667eea", end_color="667eea", fill_type="solid")
+            cell.alignment = Alignment(horizontal="center")
+    
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'financeiro_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+@app.route('/api/importar/excel', methods=['POST'])
+@login_required
+def importar_excel():
+    from openpyxl import load_workbook
+    from io import BytesIO
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Arquivo vazio'}), 400
+    
+    try:
+        wb = load_workbook(BytesIO(file.read()))
+        conn = get_db()
+        
+        importados = {'receitas': 0, 'gastos': 0, 'metas': 0}
+        
+        # Importar Receitas
+        if 'Receitas' in wb.sheetnames:
+            ws = wb['Receitas']
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if row[0]:  # Se tem data
+                    conn.execute('''INSERT INTO receitas (data, descricao, valor, tipo, notas, tags)
+                                    VALUES (?, ?, ?, ?, ?, ?)''',
+                                (row[0], row[1], row[2], row[3], row[4] or '', row[5] or ''))
+                    importados['receitas'] += 1
+        
+        # Importar Gastos
+        if 'Gastos' in wb.sheetnames:
+            ws = wb['Gastos']
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if row[0]:
+                    conn.execute('''INSERT INTO gastos (data, descricao, valor, categoria, notas, tags)
+                                    VALUES (?, ?, ?, ?, ?, ?)''',
+                                (row[0], row[1], row[2], row[3], row[4] or '', row[5] or ''))
+                    importados['gastos'] += 1
+        
+        # Importar Metas
+        if 'Metas' in wb.sheetnames:
+            ws = wb['Metas']
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if row[0]:
+                    ativo = 1 if row[6] == 'Sim' else 0
+                    conn.execute('''INSERT INTO metas (titulo, valor_alvo, valor_atual, data_inicio, data_fim, tipo, ativo)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                                (row[0], row[1], row[2], row[3], row[4], row[5], ativo))
+                    importados['metas'] += 1
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Importado: {importados["receitas"]} receitas, {importados["gastos"]} gastos, {importados["metas"]} metas'
+        })
+    
+    except Exception as e:
+        return jsonify({'error': f'Erro ao importar: {str(e)}'}), 500
+
 # Proteção contra CSRF (básica)
 @app.after_request
 def set_security_headers(response):

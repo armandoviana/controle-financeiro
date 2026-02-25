@@ -1,34 +1,36 @@
 # 💰 Controle Financeiro
 
-Um jeito simples de organizar suas finanças. Criei esse sistema porque estava cansado de planilhas complicadas e apps cheios de propaganda.
+Criei esse sistema porque estava cansado de planilhas confusas e apps cheios de anúncios. É simples, direto e faz o que precisa fazer.
 
-## O que ele faz
+## O que tem aqui
 
-Basicamente, você consegue:
+Você consegue:
 - Ver quanto entra e sai de dinheiro todo mês
-- Cadastrar gastos fixos (tipo aluguel, internet) que se repetem sozinhos
+- Cadastrar gastos fixos (aluguel, internet, Netflix) que se repetem sozinhos
 - Acompanhar se está gastando mais que o normal
 - Criar metas pra juntar grana
-- Filtrar gastos por mês
-- Ver quanto você gasta em cada categoria
+- Filtrar gastos por mês específico
+- Ver gráficos de quanto você gasta em cada categoria
+- Exportar e importar dados em Excel
 
-Tem um dashboard que mostra tudo de forma visual, com gráficos e uns cards coloridos. Nada muito complexo, só o necessário.
+O dashboard mostra tudo de forma visual, com gráficos e cards coloridos. Nada muito complexo, só o necessário pra você não perder o controle.
 
-## Como usar
+## Como rodar
 
-### Instalação local
+### No seu computador
 
 ```bash
 # Baixa o projeto
 git clone https://github.com/armandoviana/controle-financeiro.git
 cd controle-financeiro
 
-# Cria ambiente virtual
+# Cria ambiente virtual (recomendado)
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Linux/Mac
+# ou venv\Scripts\activate no Windows
 
-# Instala o Flask
-pip install Flask
+# Instala as dependências
+pip install -r requirements.txt
 
 # Cria o banco de dados
 python3 database.py
@@ -41,46 +43,48 @@ Depois é só abrir http://127.0.0.1:5000 no navegador.
 
 ### Primeiro acesso
 
-Você vai precisar configurar um usuário e senha no arquivo `app.py`. Tem uma função lá chamada `hash_senha()` que gera o hash da sua senha. É só rodar ela uma vez e colar o resultado no código.
+Você precisa configurar usuário e senha no arquivo `app.py`. Tem uma função `hash_senha()` lá que gera o hash da sua senha. Rode ela uma vez e cole o resultado no código.
 
-## Funcionalidades principais
+## Principais funcionalidades
 
-**Dashboard**: Mostra o resumo do mês - quanto entrou, quanto saiu, quanto sobrou. Tem um "score de saúde financeira" que vai de 0 a 100 baseado no seu saldo.
+**Dashboard**: Mostra o resumo do mês - quanto entrou, quanto saiu, quanto sobrou. Tem um "score de saúde financeira" que vai de 0 a 100 baseado no seu saldo. Meio bobo, mas ajuda a ter noção.
 
-**Gastos recorrentes**: Cadastra uma vez coisas como aluguel, Netflix, conta de luz. Todo mês o sistema gera automaticamente pra você. Tem 12 templates prontos, é só clicar e ajustar o valor.
+**Gastos recorrentes**: Cadastra uma vez coisas como aluguel, Netflix, conta de luz. Todo mês o sistema gera automaticamente. Tem 12 templates prontos, é só clicar e ajustar o valor se precisar.
 
-**Filtro por mês**: Quer ver só os gastos de janeiro? Seleciona o mês e pronto. Os gastos fixos aparecem destacados com uma borda rosa.
+**Filtro por mês**: Quer ver só os gastos de janeiro? Seleciona o mês e pronto. Os gastos fixos aparecem destacados com uma borda rosa pra você identificar rápido.
 
-**Metas**: Define quanto quer juntar e até quando. O sistema avisa quando está perto do prazo.
+**Metas**: Define quanto quer juntar e até quando. O sistema avisa quando está perto do prazo. Útil pra não esquecer aquela viagem que você tá planejando.
 
-**Previsões**: Olha seus gastos dos últimos 3 meses e tenta prever quanto você vai gastar em cada categoria. Útil pra não estourar o orçamento.
+**Previsões**: Olha seus gastos dos últimos 3 meses e tenta prever quanto você vai gastar em cada categoria. Não é perfeito, mas dá uma ideia.
 
-**Relatório de IR**: Separa receitas e despesas dedutíveis (saúde e educação) pra facilitar na hora de declarar imposto.
+**Relatório de IR**: Separa receitas e despesas dedutíveis (saúde e educação) pra facilitar na hora de declarar imposto. Economiza um tempo danado.
+
+**Excel**: Exporta tudo pra Excel se você quiser fazer suas próprias análises. E também importa, caso você tenha dados em planilha.
 
 ## Mobile
 
-Funciona bem no celular. O menu fica embaixo, igual apps tipo Instagram. Testei no iPhone e Android, roda tranquilo.
+Funciona bem no celular. O menu fica embaixo, igual apps tipo Instagram ou WhatsApp. Testei no iPhone e Android, roda tranquilo. Dá pra adicionar na tela inicial e usar como se fosse um app.
 
 ## Tecnologias
 
-Usei Flask porque é simples e direto. O banco é SQLite (um arquivo só, fácil de fazer backup). O frontend é HTML, CSS e JavaScript puro, sem frameworks pesados.
+Usei Flask porque é simples e direto. O banco é SQLite - um arquivo só, fácil de fazer backup. O frontend é HTML, CSS e JavaScript puro, sem frameworks pesados que deixam tudo lento.
 
 O visual tem uns efeitos de vidro (glassmorphism) e gradientes roxos. Achei bonito e moderno sem ser exagerado.
 
 ## Segurança
 
-Tem login com senha (hash SHA-256), limite de tentativas, e uns headers de segurança básicos. Nada super avançado, mas protege o essencial.
+Tem login com senha (hash SHA-256), limite de tentativas, e uns headers de segurança básicos. Nada super avançado tipo banco, mas protege o essencial pra uso pessoal.
 
-## Próximas ideias
+## Ideias futuras
 
 Talvez eu adicione:
 - Gráficos mais interativos
-- Modo offline
+- Modo offline completo (PWA)
 - Integração com banco (Open Banking)
-- Exportar relatórios em Excel
+- Notificações push
 
-Mas por enquanto está funcionando bem do jeito que está.
+Mas por enquanto está funcionando bem do jeito que está. Prefiro manter simples.
 
 ## Licença
 
-Fique à vontade pra usar, modificar, o que quiser. É um projeto pessoal que resolvi compartilhar.
+Fique à vontade pra usar, modificar, o que quiser. É um projeto pessoal que resolvi compartilhar. Se ajudar alguém, já valeu.

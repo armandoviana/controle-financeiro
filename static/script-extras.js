@@ -976,6 +976,43 @@ async function carregarTags() {
     }
 }
 
+// ===== EXPORTAR/IMPORTAR EXCEL =====
+function exportarExcel() {
+    window.location.href = '/api/exportar/excel';
+    mostrarNotificacao('📊 Exportando para Excel...', 'success');
+}
+
+async function importarExcel(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        mostrarNotificacao('📂 Importando dados...', 'info');
+        
+        const response = await fetch('/api/importar/excel', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            mostrarNotificacao(`✅ ${result.message}`, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            mostrarNotificacao(`❌ ${result.error}`, 'error');
+        }
+    } catch (error) {
+        mostrarNotificacao('❌ Erro ao importar arquivo', 'error');
+        console.error('Erro:', error);
+    }
+    
+    input.value = '';
+}
+
 // Atualizar carregamento inicial
 document.addEventListener('DOMContentLoaded', () => {
     carregarTags();

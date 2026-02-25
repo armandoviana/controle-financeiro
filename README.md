@@ -129,12 +129,11 @@ python3 app.py
 
 Acesse: http://127.0.0.1:5000
 
-## 🔑 Credenciais Padrão
+## 🔑 Configuração de Acesso
 
-- **Usuário**: casal
-- **Senha**: Rebily1234
-
-⚠️ **IMPORTANTE**: Altere as credenciais em `app.py` antes de usar em produção!
+⚠️ **IMPORTANTE**: Configure suas credenciais em `app.py` antes de usar:
+- Altere as variáveis `USUARIO` e `SENHA_HASH`
+- Use a função `hash_senha()` para gerar o hash SHA-256 da sua senha
 
 ## 📊 Estrutura do Banco de Dados
 

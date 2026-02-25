@@ -61,9 +61,26 @@ def login_required(f):
     return decorated_function
 
 def get_db():
-    conn = sqlite3.connect('financas.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Retorna conexão com banco de dados (SQLite ou PostgreSQL)"""
+    database_url = os.environ.get('DATABASE_URL')
+    
+    if database_url:
+        # PostgreSQL (produção)
+        import psycopg2
+        import psycopg2.extras
+        
+        # Render usa postgres://, mas psycopg2 precisa de postgresql://
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        
+        conn = psycopg2.connect(database_url)
+        conn.cursor_factory = psycopg2.extras.RealDictCursor
+        return conn
+    else:
+        # SQLite (local)
+        conn = sqlite3.connect('financas.db')
+        conn.row_factory = sqlite3.Row
+        return conn
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

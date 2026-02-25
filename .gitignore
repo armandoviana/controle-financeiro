@@ -39,3 +39,6 @@ Thumbs.db
 
 # Docs temporários
 testar_*.py
+
+# Kiro CLI
+controlefin

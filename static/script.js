@@ -15,6 +15,15 @@ function selectTipo(tipo) {
     document.getElementById(`form-${tipo}-container`).classList.add('active');
 }
 
+// Loading Spinner
+function showLoading() {
+    document.getElementById('loadingOverlay').classList.add('active');
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').classList.remove('active');
+}
+
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
     carregarDados();
@@ -43,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tags = document.getElementById('receita-tags')?.value || '';
         
         try {
+            showLoading();
             const response = await fetch('/api/receitas', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -67,6 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Erro:', error);
             mostrarErro('Erro ao adicionar receita. Tente novamente.');
+        } finally {
+            hideLoading();
         }
     });
     
@@ -120,6 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Erro:', error);
             mostrarErro('Erro ao adicionar gasto. Tente novamente.');
+        } finally {
+            hideLoading();
         }
     });
 });
@@ -202,6 +216,7 @@ function setDataHoje() {
 
 async function carregarDados() {
     try {
+        showLoading();
         const [receitas, gastos, resumo] = await Promise.all([
             fetch('/api/receitas').then(r => r.json()),
             fetch('/api/gastos').then(r => r.json()),
@@ -241,6 +256,9 @@ async function carregarDados() {
     // Chart de Gastos
     gerarChartGastos(gastosPorCategoria, resumo.gastos);
     
+    // Chart de Evolução
+    gerarChartEvolucao(receitas, gastos);
+    
     // Métricas (página Insights)
     calcularMetricas(receitas, gastos, resumo);
     gerarInsights(receitas, gastos, resumo, gastosPorCategoria);
@@ -266,6 +284,8 @@ async function carregarDados() {
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
         mostrarErro('Erro ao carregar dados. Recarregue a página.');
+    } finally {
+        hideLoading();
     }
 }
 
@@ -377,11 +397,14 @@ function gerarDicasRapidas(resumo, gastosPorCategoria) {
 function gerarChartGastos(gastosPorCategoria, totalGastos) {
     try {
         const container = document.getElementById('chart-gastos');
+        const canvasPizza = document.getElementById('chart-pizza');
+        
         if (!container) return;
         
         // Se não houver gastos
         if (totalGastos === 0) {
             container.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 40px;">Sem gastos cadastrados</p>';
+            if (canvasPizza) canvasPizza.getContext('2d').clearRect(0, 0, canvasPizza.width, canvasPizza.height);
             return;
         }
         
@@ -390,6 +413,7 @@ function gerarChartGastos(gastosPorCategoria, totalGastos) {
             .map(([nome, valor]) => ({ nome, valor }))
             .sort((a, b) => b.valor - a.valor);
         
+        // Gráfico de barras (existente)
         container.innerHTML = categorias.map(cat => {
             const percentual = totalGastos > 0 ? Math.round((cat.valor / totalGastos * 100)) : 0;
             const valorFormatado = formatarMoeda(cat.valor);
@@ -407,6 +431,59 @@ function gerarChartGastos(gastosPorCategoria, totalGastos) {
                 </div>
             `;
         }).join('');
+        
+        // Gráfico de Pizza com Chart.js
+        if (canvasPizza && typeof Chart !== 'undefined') {
+            const ctx = canvasPizza.getContext('2d');
+            
+            // Destruir gráfico anterior se existir
+            if (window.chartPizzaInstance) {
+                window.chartPizzaInstance.destroy();
+            }
+            
+            const cores = [
+                '#667eea', '#764ba2', '#f093fb', '#f5576c',
+                '#4facfe', '#00f2fe', '#43e97b', '#38f9d7',
+                '#fa709a', '#fee140', '#30cfd0', '#330867'
+            ];
+            
+            window.chartPizzaInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: categorias.map(c => c.nome),
+                    datasets: [{
+                        data: categorias.map(c => c.valor),
+                        backgroundColor: cores.slice(0, categorias.length),
+                        borderWidth: 2,
+                        borderColor: '#0f0c29'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#e0e0e0',
+                                padding: 15,
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const valor = formatarMoeda(context.parsed);
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentual = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${valor} (${percentual}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
     } catch (error) {
         console.error('Erro ao gerar chart de gastos:', error);
         const container = document.getElementById('chart-gastos');
@@ -846,6 +923,114 @@ function getTipoIcon(tipo) {
 function getCategoriaIcon(categoria) {
     const icons = { 'Fixo': '🏠', 'Cartão': '💳', 'Diário': '🛒' };
     return icons[categoria] || '💸';
+}
+
+function gerarChartEvolucao(receitas, gastos) {
+    try {
+        const canvas = document.getElementById('chart-evolucao');
+        if (!canvas || typeof Chart === 'undefined') return;
+        
+        // Agrupar por mês (últimos 6 meses)
+        const meses = {};
+        const hoje = new Date();
+        
+        for (let i = 5; i >= 0; i--) {
+            const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+            const chave = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
+            meses[chave] = { receitas: 0, gastos: 0, label: data.toLocaleDateString('pt-BR', { month: 'short' }) };
+        }
+        
+        // Somar receitas e gastos por mês
+        receitas.forEach(r => {
+            const mes = r.data.substring(0, 7);
+            if (meses[mes]) meses[mes].receitas += parseFloat(r.valor);
+        });
+        
+        gastos.forEach(g => {
+            const mes = g.data.substring(0, 7);
+            if (meses[mes]) meses[mes].gastos += parseFloat(g.valor);
+        });
+        
+        const labels = Object.values(meses).map(m => m.label);
+        const dataReceitas = Object.values(meses).map(m => m.receitas);
+        const dataGastos = Object.values(meses).map(m => m.gastos);
+        
+        // Destruir gráfico anterior
+        if (window.chartEvolucaoInstance) {
+            window.chartEvolucaoInstance.destroy();
+        }
+        
+        const ctx = canvas.getContext('2d');
+        window.chartEvolucaoInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Receitas',
+                        data: dataReceitas,
+                        borderColor: '#4ade80',
+                        backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Gastos',
+                        data: dataGastos,
+                        borderColor: '#f87171',
+                        backgroundColor: 'rgba(248, 113, 113, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#e0e0e0',
+                            padding: 15,
+                            font: { size: 13 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${formatarMoeda(context.parsed.y)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#e0e0e0',
+                            callback: function(value) {
+                                return 'R$ ' + value.toLocaleString('pt-BR');
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#e0e0e0'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao gerar chart de evolução:', error);
+    }
 }
 
 function formatarMoeda(valor) {

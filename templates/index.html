@@ -6,10 +6,22 @@
     <meta name="theme-color" content="#667eea">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Sistema de controle financeiro pessoal">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='80'>💰</text></svg>">
     <title>Controle Financeiro</title>
     <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div>
+            <div class="spinner"></div>
+            <div class="loading-text">Carregando...</div>
+        </div>
+    </div>
+
     <!-- Menu Lateral -->
     <nav class="sidebar">
         <div class="sidebar-header">
@@ -694,5 +706,13 @@
 
     <script src="/static/script.js"></script>
     <script src="/static/script-extras.js"></script>
+    <script>
+        // Registra Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/service-worker.js')
+                .then(reg => console.log('✅ Service Worker registrado'))
+                .catch(err => console.log('❌ Erro ao registrar SW:', err));
+        }
+    </script>
 </body>
 </html>

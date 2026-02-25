@@ -1,251 +1,86 @@
-# 💰 Controle Financeiro v2.2
+# 💰 Controle Financeiro
 
-Sistema completo de gestão financeira pessoal com recursos avançados de análise, previsão e organização.
+Um jeito simples de organizar suas finanças. Criei esse sistema porque estava cansado de planilhas complicadas e apps cheios de propaganda.
 
-[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.0.0-green.svg)](https://flask.palletsprojects.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+## O que ele faz
 
-## 🚀 Funcionalidades
+Basicamente, você consegue:
+- Ver quanto entra e sai de dinheiro todo mês
+- Cadastrar gastos fixos (tipo aluguel, internet) que se repetem sozinhos
+- Acompanhar se está gastando mais que o normal
+- Criar metas pra juntar grana
+- Filtrar gastos por mês
+- Ver quanto você gasta em cada categoria
 
-### 📊 Dashboard Inteligente
-- Resumo visual de receitas, gastos e saldo
-- Score de saúde financeira (0-100)
-- Comparação mensal automática
-- Gráficos de evolução (6 meses)
-- **Gráfico de pizza** para distribuição visual
-- Distribuição de gastos por categoria
-- Alertas e notificações em tempo real
-- **Animações suaves** nos cards ao passar o mouse
+Tem um dashboard que mostra tudo de forma visual, com gráficos e uns cards coloridos. Nada muito complexo, só o necessário.
 
-### ➕ Gestão de Transações
-- Cadastro de receitas e gastos
-- **✏️ Editar transações existentes** (novo!)
-- **🗑️ Confirmação antes de deletar** (novo!)
-- **Notas e observações** em cada transação
-- **Tags personalizadas** para organização
-- **Anexar comprovantes** (fotos/PDFs em base64)
-- Máscaras de moeda automáticas (R$ X.XXX,XX)
-- Validação completa de dados
+## Como usar
 
-### 🔄 Gastos Recorrentes
-- **12 templates pré-definidos**: Aluguel, Internet, Luz, Água, Gás, Netflix, Spotify, Academia, Plano de Saúde, Transporte, Condomínio, Celular
-- Geração automática mensal
-- Configuração de dia de vencimento
-- Ativar/desativar recorrentes
-- Customização completa
-
-### 🔮 Previsões Inteligentes
-- Análise de padrões históricos (últimos 3 meses)
-- Projeção de gastos por categoria
-- Alertas visuais de orçamento
-- Comparação previsto vs real
-- Indicadores de status (✅ ⚠️ 🚨)
-
-### 🎯 Metas Financeiras
-- Criar metas com valores e prazos
-- **🔔 Alertas quando faltam 7 dias** (novo!)
-- Acompanhamento de progresso
-- Tipos: Economia, Investimento, Compra, Viagem
-- Alertas de vencimento
-- Preview no dashboard
-
-### 💡 Insights Automáticos
-- Análise de comportamento financeiro
-- Recomendações personalizadas
-- Métricas avançadas:
-  - Comprometimento de renda
-  - Capacidade de poupança
-  - Média diária de gastos
-  - Projeção mensal
-
-### 📋 Relatório Imposto de Renda
-- Separação automática de receitas tributáveis
-- Despesas dedutíveis (Saúde + Educação)
-- Seleção de ano fiscal
-- Exportação em PDF formatado
-- Detalhamento por categoria
-
-### 📜 Histórico Completo
-- **🔍 Busca em tempo real** (novo!)
-- Listagem de todas transações
-- **Botões de editar e deletar** em cada item (novo!)
-- Filtros e busca
-- Visualização de comprovantes
-- Tags e notas visíveis
-
-### ⌨️ Atalhos de Teclado (novo!)
-- `ESC` → Fecha modais
-- `Ctrl+N` → Nova meta
-- `Ctrl+R` → Novo recorrente
-- Aumenta produtividade
-
-### 💾 Auto-save (novo!)
-- Salva formulários automaticamente
-- Recupera dados se fechar sem salvar
-- Usa localStorage do navegador
-
-### 🔒 Segurança
-- Autenticação com hash SHA-256
-- Limite de tentativas de login (5x)
-- Bloqueio temporário (5 minutos)
-- Sessões seguras (24h)
-- Headers de segurança (HSTS, XSS, etc)
-
-### 📤 Exportação
-- Backup JSON completo
-- Relatórios em PDF
-- Dados de Imposto de Renda
-
-## 🛠️ Tecnologias
-
-- **Backend**: Flask 3.0.0 (Python)
-- **Banco de Dados**: SQLite
-- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
-- **Design**: Glassmorphism, gradientes, animações CSS
-- **Segurança**: SHA-256, rate limiting, secure headers
-
-## 📦 Instalação
+### Instalação local
 
 ```bash
-# Clone o repositório
+# Baixa o projeto
+git clone https://github.com/armandoviana/controle-financeiro.git
 cd controle-financeiro
 
-# Crie o ambiente virtual
+# Cria ambiente virtual
 python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# ou
-venv\Scripts\activate  # Windows
+source venv/bin/activate
 
-# Instale as dependências
+# Instala o Flask
 pip install Flask
 
-# Inicialize o banco de dados
+# Cria o banco de dados
 python3 database.py
 
-# Execute o servidor
+# Roda o servidor
 python3 app.py
 ```
 
-Acesse: http://127.0.0.1:5000
+Depois é só abrir http://127.0.0.1:5000 no navegador.
 
-## 🔑 Configuração de Acesso
+### Primeiro acesso
 
-⚠️ **IMPORTANTE**: Configure suas credenciais em `app.py` antes de usar:
-- Altere as variáveis `USUARIO` e `SENHA_HASH`
-- Use a função `hash_senha()` para gerar o hash SHA-256 da sua senha
+Você vai precisar configurar um usuário e senha no arquivo `app.py`. Tem uma função lá chamada `hash_senha()` que gera o hash da sua senha. É só rodar ela uma vez e colar o resultado no código.
 
-## 📊 Estrutura do Banco de Dados
+## Funcionalidades principais
 
-### Tabelas Principais
-- **receitas**: id, descricao, valor, tipo, data, notas, tags
-- **gastos**: id, descricao, valor, categoria, data, notas, tags
-- **metas**: id, titulo, valor_alvo, valor_atual, data_inicio, data_fim, tipo, ativo
-- **alertas**: id, tipo, mensagem, data, lido
-- **recorrentes**: id, descricao, valor, categoria, dia_vencimento, ativo, ultima_geracao
-- **comprovantes**: id, transacao_tipo, transacao_id, arquivo_base64, nome_arquivo, data_upload
-- **previsoes**: id, categoria, mes_referencia, valor_previsto, valor_real, data_calculo
+**Dashboard**: Mostra o resumo do mês - quanto entrou, quanto saiu, quanto sobrou. Tem um "score de saúde financeira" que vai de 0 a 100 baseado no seu saldo.
 
-## 🎨 Categorias
+**Gastos recorrentes**: Cadastra uma vez coisas como aluguel, Netflix, conta de luz. Todo mês o sistema gera automaticamente pra você. Tem 12 templates prontos, é só clicar e ajustar o valor.
 
-### Receitas
-- 💼 Salário
-- 💻 Freelance
-- 🎫 Cartão Benefício
-- 💰 Outras Rendas
+**Filtro por mês**: Quer ver só os gastos de janeiro? Seleciona o mês e pronto. Os gastos fixos aparecem destacados com uma borda rosa.
 
-### Gastos
-- 🍔 Alimentação
-- 🚗 Transporte
-- 🏠 Moradia
-- 💊 Saúde
-- 🎮 Lazer
-- 📚 Educação
-- 📦 Outros
+**Metas**: Define quanto quer juntar e até quando. O sistema avisa quando está perto do prazo.
 
-## 🚀 Novidades da Versão 2.2
+**Previsões**: Olha seus gastos dos últimos 3 meses e tenta prever quanto você vai gastar em cada categoria. Útil pra não estourar o orçamento.
 
-🐛 **Bug Crítico Corrigido**:
-- Gastos recorrentes agora atualizam previsões automaticamente
-- Dashboard mostra valores imediatamente após gerar recorrentes
+**Relatório de IR**: Separa receitas e despesas dedutíveis (saúde e educação) pra facilitar na hora de declarar imposto.
 
-✨ **3 Novas Funcionalidades Incríveis**:
+## Mobile
 
-1. **📅 Filtro por Mês**: Visualize transações de um mês específico
-2. **🔄 Separação Fixos/Variáveis**: Identifique gastos recorrentes vs variáveis
-3. **📊 Resumo Mensal**: Widget no dashboard mostrando fixos, variáveis e total
+Funciona bem no celular. O menu fica embaixo, igual apps tipo Instagram. Testei no iPhone e Android, roda tranquilo.
 
-### 💎 Melhorias Visuais
+## Tecnologias
 
-**Gastos Fixos Destacados:**
-- 🔄 Ícone de recorrente
-- 🏷️ Badge "FIXO" com gradiente rosa
-- 📍 Borda rosa vibrante
-- 🎨 Fundo diferenciado
-- 📌 Aparecem primeiro na lista
+Usei Flask porque é simples e direto. O banco é SQLite (um arquivo só, fácil de fazer backup). O frontend é HTML, CSS e JavaScript puro, sem frameworks pesados.
 
-**Filtros Inteligentes:**
-- Input de mês estilizado
-- Botão "🔄 Todos" para limpar filtros
-- Layout responsivo
+O visual tem uns efeitos de vidro (glassmorphism) e gradientes roxos. Achei bonito e moderno sem ser exagerado.
 
-## 🚀 Novidades da Versão 2.1
+## Segurança
 
-✨ **8 Melhorias Surpreendentes**:
+Tem login com senha (hash SHA-256), limite de tentativas, e uns headers de segurança básicos. Nada super avançado, mas protege o essencial.
 
-1. **✏️ Editar Transações**: Corrija erros sem precisar deletar e recriar
-2. **⌨️ Atalhos de Teclado**: Navegue mais rápido (ESC, Ctrl+N, Ctrl+R)
-3. **🔍 Busca no Histórico**: Encontre transações instantaneamente
-4. **⚠️ Confirmação de Exclusão**: Previne exclusões acidentais
-5. **🥧 Gráfico de Pizza**: Visualização circular da distribuição
-6. **🔔 Alertas de Metas**: Badge quando faltam 7 dias
-7. **✨ Animações**: Cards flutuam ao passar o mouse
-8. **💾 Auto-save**: Nunca perca dados de formulários
+## Próximas ideias
 
-### 💎 Interface Premium
+Talvez eu adicione:
+- Gráficos mais interativos
+- Modo offline
+- Integração com banco (Open Banking)
+- Exportar relatórios em Excel
 
-**Input de Valores Modernizado:**
-- Design "Calculadora Premium" com gradiente roxo vibrante
-- Ícone SVG elegante com círculo
-- Números em fonte moderna
-- Display flutuante mostrando valor formatado
-- Animação de pulso ao digitar
-- Efeito de elevação no foco
+Mas por enquanto está funcionando bem do jeito que está.
 
-**Modais Otimizados:**
-- Proporções equilibradas e responsivas
-- Fundo branco sólido para melhor contraste
-- Campos com texto visível e legível
-- Campo de vencimento com número grande e centralizado
-- Radio cards com gradiente roxo ao selecionar
-- Botão fechar redesenhado com hover vermelho
-- Totalmente responsivo (mobile, tablet, desktop)
+## Licença
 
-## 📱 Responsividade
-
-Interface totalmente responsiva, funciona perfeitamente em:
-- 💻 Desktop
-- 📱 Tablet
-- 📱 Mobile
-
-## 🎯 Roadmap Futuro
-
-- [ ] Gráficos interativos (Chart.js)
-- [ ] Modo offline (PWA)
-- [ ] Multi-usuário
-- [ ] Integração bancária (Open Banking)
-- [ ] App mobile nativo
-- [ ] Relatórios customizáveis
-
-## 📄 Licença
-
-Projeto pessoal - Uso livre
-
-## 👨‍💻 Desenvolvido com ❤️
-
-Sistema criado para facilitar o controle financeiro pessoal com foco em usabilidade e recursos avançados.
-
----
-
-**Versão**: 2.2.0  
-**Data**: Fevereiro 2026
+Fique à vontade pra usar, modificar, o que quiser. É um projeto pessoal que resolvi compartilhar.

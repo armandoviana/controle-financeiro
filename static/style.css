@@ -1397,16 +1397,23 @@ select {
 }
 
 @media (max-width: 768px) {
+    body {
+        padding-bottom: 75px;
+    }
+    
     .sidebar {
         width: 100%;
-        height: 70px;
+        height: 75px;
         position: fixed;
         bottom: 0;
         top: auto;
+        left: 0;
         flex-direction: row;
         border-right: none;
         border-top: 1px solid var(--glass-border);
         box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.3);
+        padding: 0;
+        z-index: 9999;
     }
     
     .sidebar-header {
@@ -1419,26 +1426,46 @@ select {
         flex-direction: row;
         justify-content: space-around;
         align-items: center;
-        padding: 0 10px;
+        padding: 0;
         margin: 0;
+        gap: 0;
     }
     
     .menu-item {
+        flex: 1;
         flex-direction: column;
-        gap: 5px;
-        padding: 8px 12px;
+        gap: 4px;
+        padding: 10px 5px;
         margin: 0;
-        min-width: 60px;
+        border-radius: 0;
+        min-height: 75px;
+        justify-content: center;
+    }
+    
+    .menu-item::before {
+        display: none;
+    }
+    
+    .menu-item:hover {
+        transform: none;
+        background: rgba(102, 126, 234, 0.1);
+    }
+    
+    .menu-item.active {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.25), rgba(118, 75, 162, 0.25));
+        border-top: 3px solid #667eea;
     }
     
     .menu-icon {
-        font-size: 1.5em;
+        font-size: 1.6em;
     }
     
     .menu-text {
         display: block;
         font-size: 0.7em;
         text-align: center;
+        font-weight: 600;
+        line-height: 1.2;
     }
     
     .sidebar-footer {
@@ -1447,26 +1474,189 @@ select {
     
     .main-content {
         margin-left: 0;
-        margin-bottom: 70px;
-        padding: 20px 15px;
+        margin-bottom: 0;
+        padding: 15px 12px 20px 12px;
+        min-height: calc(100vh - 75px);
     }
     
-    .resumo-cards,
+    /* Cards responsivos */
+    .resumo-cards {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .card {
+        padding: 18px 15px;
+    }
+    
+    .card-header {
+        margin-bottom: 12px;
+    }
+    
+    .card-title {
+        font-size: 0.95em;
+    }
+    
+    .card-icon {
+        font-size: 1.8em;
+    }
+    
+    .card-value {
+        font-size: 1.8em;
+    }
+    
+    .section-title {
+        font-size: 1.2em;
+        margin-bottom: 15px;
+    }
+    
     .dashboard-grid,
     .historico-grid {
         grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    /* Formulários otimizados para mobile */
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+        font-size: 16px !important; /* Evita zoom automático no iOS */
+        padding: 14px 15px;
+        -webkit-appearance: none;
     }
     
     .radio-group {
         grid-template-columns: 1fr;
+        gap: 10px;
     }
     
-    .card {
-        padding: 20px 15px;
+    /* Botões otimizados para toque */
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger,
+    .btn-filtro {
+        padding: 15px 20px;
+        font-size: 1em;
+        min-height: 50px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
     }
     
-    .section-title {
-        font-size: 1.3em;
+    /* Modais mobile-friendly */
+    .modal-content {
+        width: 95%;
+        max-width: 95%;
+        margin: 10px auto;
+        max-height: 85vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .modal-header {
+        padding: 15px;
+        position: sticky;
+        top: 0;
+        background: var(--card-bg);
+        z-index: 10;
+    }
+    
+    .modal-body {
+        padding: 15px;
+    }
+    
+    .close-modal {
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+    }
+    
+    /* Histórico mobile */
+    .historico-item {
+        padding: 15px 12px;
+    }
+    
+    .item-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .item-descricao {
+        font-size: 1em;
+    }
+    
+    .item-valor {
+        font-size: 1.4em;
+    }
+    
+    .item-actions {
+        opacity: 1; /* Sempre visível no mobile */
+        margin-top: 10px;
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    /* Gráficos */
+    .chart-container {
+        height: 250px;
+        padding: 10px;
+    }
+    
+    #chart-pizza {
+        max-width: 250px;
+    }
+    
+    /* Templates de recorrentes */
+    .templates-grid {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+        gap: 10px;
+    }
+    
+    .template-card {
+        padding: 15px 10px;
+    }
+    
+    .template-icon {
+        font-size: 28px;
+    }
+    
+    .template-nome {
+        font-size: 12px;
+    }
+    
+    /* Recorrentes lista */
+    .recorrentes-lista {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Previsões */
+    .previsoes-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* IR */
+    .ir-resumo {
+        grid-template-columns: 1fr;
+    }
+    
+    .ir-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    /* Input de busca */
+    .search-container input,
+    .busca-historico {
+        font-size: 16px !important;
+    }
+    
+    /* Input de mês */
+    .input-mes-filtro {
+        font-size: 16px !important;
+        width: 100%;
     }
 }
 
@@ -1475,17 +1665,49 @@ select {
         font-size: 13px;
     }
     
+    .sidebar {
+        height: 70px;
+    }
+    
     .menu-item {
         min-width: 50px;
-        padding: 8px 8px;
+        padding: 8px 3px;
+        min-height: 70px;
     }
     
     .menu-icon {
-        font-size: 1.3em;
+        font-size: 1.4em;
     }
     
     .menu-text {
         font-size: 0.65em;
+    }
+    
+    .main-content {
+        padding: 12px 10px 15px 10px;
+    }
+    
+    .card {
+        padding: 15px 12px;
+    }
+    
+    .card-value {
+        font-size: 1.6em;
+    }
+    
+    .modal-content {
+        width: 98%;
+        margin: 5px auto;
+    }
+    
+    .form-input,
+    .form-select {
+        padding: 12px;
+    }
+    
+    .btn-primary,
+    .btn-secondary {
+        padding: 14px 16px;
     }
 }
 

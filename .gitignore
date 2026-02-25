@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+server.log
+
+# OS
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup
+*.bak
+*~
+*.old
+
+# Docs temporários
+testar_*.py

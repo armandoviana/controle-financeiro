@@ -399,12 +399,23 @@ function gerarChartGastos(gastosPorCategoria, totalGastos) {
         const container = document.getElementById('chart-gastos');
         const canvasPizza = document.getElementById('chart-pizza');
         
+        console.log('🔍 Debug Chart Pizza:', {
+            container: !!container,
+            canvasPizza: !!canvasPizza,
+            totalGastos,
+            gastosPorCategoria,
+            chartJsDisponivel: typeof Chart !== 'undefined'
+        });
+        
         if (!container) return;
         
         // Se não houver gastos
-        if (totalGastos === 0) {
+        if (totalGastos === 0 || !totalGastos) {
             container.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 40px;">Sem gastos cadastrados</p>';
-            if (canvasPizza) canvasPizza.getContext('2d').clearRect(0, 0, canvasPizza.width, canvasPizza.height);
+            if (canvasPizza) {
+                const ctx = canvasPizza.getContext('2d');
+                ctx.clearRect(0, 0, canvasPizza.width, canvasPizza.height);
+            }
             return;
         }
         
@@ -483,9 +494,13 @@ function gerarChartGastos(gastosPorCategoria, totalGastos) {
                     }
                 }
             });
+            
+            console.log('✅ Gráfico de pizza criado com sucesso!');
+        } else {
+            console.warn('⚠️ Canvas ou Chart.js não disponível');
         }
     } catch (error) {
-        console.error('Erro ao gerar chart de gastos:', error);
+        console.error('❌ Erro ao gerar chart de gastos:', error);
         const container = document.getElementById('chart-gastos');
         if (container) {
             container.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 20px;">Erro ao carregar</p>';

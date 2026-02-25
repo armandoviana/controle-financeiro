@@ -1623,7 +1623,12 @@ select {
     }
     
     #chart-pizza {
-        max-width: 250px;
+        max-width: 100% !important;
+        height: auto !important;
+    }
+    
+    .distribuicao-pizza {
+        min-height: 400px;
     }
     
     /* Templates de recorrentes */

@@ -385,25 +385,31 @@ def evolucao():
     user_id = session.get('user_id')
     
     # Últimos 6 meses
-    query = '''
-        SELECT strftime('%Y-%m', data) as mes,
-               SUM(valor) as total
-        FROM receitas
-        WHERE user_id=? AND date(data) >= date('now', '-6 months')
-        GROUP BY mes
-        ORDER BY mes
-    '''
-    receitas_mes = db_execute(conn, query, (user_id,)).fetchall() or []
+    try:
+        query = '''
+            SELECT strftime('%Y-%m', data) as mes,
+                   SUM(valor) as total
+            FROM receitas
+            WHERE user_id=? AND date(data) >= date('now', '-6 months')
+            GROUP BY mes
+            ORDER BY mes
+        '''
+        receitas_mes = db_execute(conn, query, (user_id,)).fetchall() or []
+    except:
+        receitas_mes = []
     
-    query = '''
-        SELECT strftime('%Y-%m', data) as mes,
-               SUM(valor) as total
-        FROM gastos
-        WHERE user_id=? AND date(data) >= date('now', '-6 months')
-        GROUP BY mes
-        ORDER BY mes
-    '''
-    gastos_mes = db_execute(conn, query, (user_id,)).fetchall() or []
+    try:
+        query = '''
+            SELECT strftime('%Y-%m', data) as mes,
+                   SUM(valor) as total
+            FROM gastos
+            WHERE user_id=? AND date(data) >= date('now', '-6 months')
+            GROUP BY mes
+            ORDER BY mes
+        '''
+        gastos_mes = db_execute(conn, query, (user_id,)).fetchall() or []
+    except:
+        gastos_mes = []
     
     conn.close()
     
@@ -475,28 +481,37 @@ def comparacao():
     user_id = session.get('user_id')
     
     # Mês atual
-    mes_atual_result = db_execute(conn, '''
-        SELECT SUM(valor) as total FROM gastos 
-        WHERE user_id=? AND strftime('%Y-%m', data) = strftime('%Y-%m', 'now')
-    ''', (user_id,)).fetchone()
-    mes_atual = float(mes_atual_result['total'] or 0) if mes_atual_result else 0
+    try:
+        mes_atual_result = db_execute(conn, '''
+            SELECT SUM(valor) as total FROM gastos 
+            WHERE user_id=? AND strftime('%Y-%m', data) = strftime('%Y-%m', 'now')
+        ''', (user_id,)).fetchone()
+        mes_atual = float(mes_atual_result['total']) if mes_atual_result and mes_atual_result['total'] else 0
+    except:
+        mes_atual = 0
     
     # Mês anterior
-    mes_anterior_result = db_execute(conn, '''
-        SELECT SUM(valor) as total FROM gastos 
-        WHERE user_id=? AND strftime('%Y-%m', data) = strftime('%Y-%m', date('now', '-1 month'))
-    ''', (user_id,)).fetchone()
-    mes_anterior = float(mes_anterior_result['total'] or 0) if mes_anterior_result else 0
+    try:
+        mes_anterior_result = db_execute(conn, '''
+            SELECT SUM(valor) as total FROM gastos 
+            WHERE user_id=? AND strftime('%Y-%m', data) = strftime('%Y-%m', date('now', '-1 month'))
+        ''', (user_id,)).fetchone()
+        mes_anterior = float(mes_anterior_result['total']) if mes_anterior_result and mes_anterior_result['total'] else 0
+    except:
+        mes_anterior = 0
     
     # Média dos últimos 3 meses
-    media_result = db_execute(conn, '''
-        SELECT AVG(total) as media FROM (
-            SELECT SUM(valor) as total FROM gastos 
-            WHERE user_id=? AND date(data) >= date('now', '-3 months')
-            GROUP BY strftime('%Y-%m', data)
-        )
-    ''', (user_id,)).fetchone()
-    media_3_meses = float(media_result['media'] or 0) if media_result else 0
+    try:
+        media_result = db_execute(conn, '''
+            SELECT AVG(total) as media FROM (
+                SELECT SUM(valor) as total FROM gastos 
+                WHERE user_id=? AND date(data) >= date('now', '-3 months')
+                GROUP BY strftime('%Y-%m', data)
+            )
+        ''', (user_id,)).fetchone()
+        media_3_meses = float(media_result['media']) if media_result and media_result['media'] else 0
+    except:
+        media_3_meses = 0
     
     conn.close()
     
@@ -694,17 +709,23 @@ def relatorio_ir():
     user_id = session.get('user_id')
     ano = request.args.get('ano', datetime.now().year)
     
-    receitas_result = db_execute(conn, '''
-        SELECT SUM(valor) as total FROM receitas 
-        WHERE user_id=? AND strftime('%Y', data) = ? AND tipo IN ('Salário', 'Freelance')
-    ''', (user_id, str(ano))).fetchone()
-    receitas_tributaveis = float(receitas_result['total'] or 0) if receitas_result else 0
+    try:
+        receitas_result = db_execute(conn, '''
+            SELECT SUM(valor) as total FROM receitas 
+            WHERE user_id=? AND strftime('%Y', data) = ? AND tipo IN ('Salário', 'Freelance')
+        ''', (user_id, str(ano))).fetchone()
+        receitas_tributaveis = float(receitas_result['total']) if receitas_result and receitas_result['total'] else 0
+    except:
+        receitas_tributaveis = 0
     
-    despesas_dedutiveis = db_execute(conn, '''
-        SELECT categoria, SUM(valor) as total FROM gastos 
-        WHERE user_id=? AND strftime('%Y', data) = ? AND categoria IN ('Saúde', 'Educação')
-        GROUP BY categoria
-    ''', (user_id, str(ano))).fetchall() or []
+    try:
+        despesas_dedutiveis = db_execute(conn, '''
+            SELECT categoria, SUM(valor) as total FROM gastos 
+            WHERE user_id=? AND strftime('%Y', data) = ? AND categoria IN ('Saúde', 'Educação')
+            GROUP BY categoria
+        ''', (user_id, str(ano))).fetchall() or []
+    except:
+        despesas_dedutiveis = []
     
     conn.close()
     

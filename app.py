@@ -23,6 +23,20 @@ except Exception as e:
     print(f"⚠️ Erro ao inicializar banco: {e}")
     print("Tentando criar tabelas...")
 
+# Inicializar SQLAlchemy (novo)
+try:
+    from config import Config
+    from models import db
+    from models.user import User
+    from models.transaction import Receita, Gasto
+    from models.meta import Meta
+    
+    app.config.from_object(Config)
+    db.init_app(app)
+    print("✅ SQLAlchemy inicializado!")
+except Exception as e:
+    print(f"⚠️ SQLAlchemy não inicializado: {e}")
+
 # Credenciais com hash (MUDE ISSO!)
 USUARIO = 'casal'
 # Senha: Rebily1234 (hash SHA-256)
@@ -1030,6 +1044,39 @@ def adicionar_user_id():
         return jsonify({'success': True, 'message': 'Colunas user_id adicionadas com sucesso!'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/test-sqlalchemy')
+def test_sqlalchemy():
+    """Rota de teste para verificar se SQLAlchemy está funcionando"""
+    try:
+        from models.user import User
+        from models.transaction import Receita, Gasto
+        from models.meta import Meta
+        
+        # Tenta contar registros usando ORM
+        user_count = User.query.count()
+        receita_count = Receita.query.count()
+        gasto_count = Gasto.query.count()
+        meta_count = Meta.query.count()
+        
+        return jsonify({
+            'success': True,
+            'message': '✅ SQLAlchemy funcionando perfeitamente!',
+            'orm_counts': {
+                'usuarios': user_count,
+                'receitas': receita_count,
+                'gastos': gasto_count,
+                'metas': meta_count
+            },
+            'database': app.config.get('SQLALCHEMY_DATABASE_URI', 'N/A')[:20] + '...'
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 @app.after_request
 def set_security_headers(response):

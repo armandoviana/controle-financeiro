@@ -125,7 +125,8 @@ def login():
         # Buscar usuário no banco
         try:
             conn = get_db()
-            cursor = conn.execute('SELECT id, username, password_hash FROM usuarios WHERE username = ?', (usuario,))
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, username, password_hash FROM usuarios WHERE username = ?', (usuario,))
             user = cursor.fetchone()
             conn.close()
             
@@ -176,7 +177,8 @@ def cadastro():
             
             # Verificar se username já existe
             conn = get_db()
-            cursor = conn.execute('SELECT id FROM usuarios WHERE username = ?', (username,))
+            cursor = conn.cursor()
+            cursor.execute('SELECT id FROM usuarios WHERE username = ?', (username,))
             if cursor.fetchone():
                 conn.close()
                 return jsonify({'success': False, 'message': 'Username já está em uso'}), 400
@@ -186,7 +188,7 @@ def cadastro():
             senha_hash = hash_senha(senha)
             data_criacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             
-            conn.execute('INSERT INTO usuarios (username, password_hash, email, data_criacao) VALUES (?, ?, ?, ?)',
+            cursor.execute('INSERT INTO usuarios (username, password_hash, email, data_criacao) VALUES (?, ?, ?, ?)',
                         (username, senha_hash, email, data_criacao))
             conn.commit()
             conn.close()

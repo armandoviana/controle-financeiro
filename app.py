@@ -237,9 +237,9 @@ def receitas():
             conn.close()
             return jsonify({'success': False, 'message': 'Valor inválido'}), 400
         
-        conn.execute('UPDATE receitas SET descricao=?, valor=?, tipo=?, data=?, notas=?, tags=? WHERE id=?',
+        conn.execute('UPDATE receitas SET descricao=?, valor=?, tipo=?, data=?, notas=?, tags=? WHERE id=? AND user_id=?',
                     (data['descricao'][:200], valor, data['tipo'], data['data'],
-                     data.get('notas', ''), data.get('tags', ''), receita_id))
+                     data.get('notas', ''), data.get('tags', ''), receita_id, user_id))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
@@ -250,12 +250,12 @@ def receitas():
             conn.close()
             return jsonify({'success': False, 'message': 'ID não fornecido'}), 400
         
-        conn.execute('DELETE FROM receitas WHERE id=?', (receita_id,))
+        conn.execute('DELETE FROM receitas WHERE id=? AND user_id=?', (receita_id, user_id))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
     
-    receitas = conn.execute('SELECT * FROM receitas ORDER BY data DESC').fetchall()
+    receitas = conn.execute('SELECT * FROM receitas WHERE user_id=? ORDER BY data DESC', (user_id,)).fetchall()
     conn.close()
     return jsonify([dict(r) for r in receitas])
 
@@ -263,6 +263,8 @@ def receitas():
 @login_required
 def gastos():
     conn = get_db()
+    user_id = session.get('user_id')
+    
     if request.method == 'POST':
         data = request.json
         
@@ -279,8 +281,8 @@ def gastos():
             conn.close()
             return jsonify({'success': False, 'message': 'Valor inválido'}), 400
         
-        cursor = conn.execute('INSERT INTO gastos (descricao, valor, categoria, data, notas, tags) VALUES (?, ?, ?, ?, ?, ?)',
-                    (data['descricao'][:200], valor, data['categoria'], data['data'], 
+        cursor = conn.execute('INSERT INTO gastos (user_id, descricao, valor, categoria, data, notas, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    (user_id, data['descricao'][:200], valor, data['categoria'], data['data'], 
                      data.get('notas', ''), data.get('tags', '')))
         gasto_id = cursor.lastrowid
         conn.commit()
@@ -303,9 +305,9 @@ def gastos():
             conn.close()
             return jsonify({'success': False, 'message': 'Valor inválido'}), 400
         
-        conn.execute('UPDATE gastos SET descricao=?, valor=?, categoria=?, data=?, notas=?, tags=? WHERE id=?',
+        conn.execute('UPDATE gastos SET descricao=?, valor=?, categoria=?, data=?, notas=?, tags=? WHERE id=? AND user_id=?',
                     (data['descricao'][:200], valor, data['categoria'], data['data'],
-                     data.get('notas', ''), data.get('tags', ''), gasto_id))
+                     data.get('notas', ''), data.get('tags', ''), gasto_id, user_id))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
@@ -316,12 +318,12 @@ def gastos():
             conn.close()
             return jsonify({'success': False, 'message': 'ID não fornecido'}), 400
         
-        conn.execute('DELETE FROM gastos WHERE id=?', (gasto_id,))
+        conn.execute('DELETE FROM gastos WHERE id=? AND user_id=?', (gasto_id, user_id))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
     
-    gastos = conn.execute('SELECT * FROM gastos ORDER BY data DESC').fetchall()
+    gastos = conn.execute('SELECT * FROM gastos WHERE user_id=? ORDER BY data DESC', (user_id,)).fetchall()
     conn.close()
     return jsonify([dict(g) for g in gastos])
 
@@ -329,8 +331,9 @@ def gastos():
 @login_required
 def resumo():
     conn = get_db()
-    total_receitas = conn.execute('SELECT SUM(valor) as total FROM receitas').fetchone()['total'] or 0
-    total_gastos = conn.execute('SELECT SUM(valor) as total FROM gastos').fetchone()['total'] or 0
+    user_id = session.get('user_id')
+    total_receitas = conn.execute('SELECT SUM(valor) as total FROM receitas WHERE user_id=?', (user_id,)).fetchone()['total'] or 0
+    total_gastos = conn.execute('SELECT SUM(valor) as total FROM gastos WHERE user_id=?', (user_id,)).fetchone()['total'] or 0
     conn.close()
     return jsonify({
         'receitas': total_receitas,
@@ -342,27 +345,28 @@ def resumo():
 @login_required
 def evolucao():
     conn = get_db()
+    user_id = session.get('user_id')
     
     # Últimos 6 meses
     query = '''
         SELECT strftime('%Y-%m', data) as mes,
                SUM(valor) as total
         FROM receitas
-        WHERE date(data) >= date('now', '-6 months')
+        WHERE user_id=? AND date(data) >= date('now', '-6 months')
         GROUP BY mes
         ORDER BY mes
     '''
-    receitas_mes = conn.execute(query).fetchall()
+    receitas_mes = conn.execute(query, (user_id,)).fetchall()
     
     query = '''
         SELECT strftime('%Y-%m', data) as mes,
                SUM(valor) as total
         FROM gastos
-        WHERE date(data) >= date('now', '-6 months')
+        WHERE user_id=? AND date(data) >= date('now', '-6 months')
         GROUP BY mes
         ORDER BY mes
     '''
-    gastos_mes = conn.execute(query).fetchall()
+    gastos_mes = conn.execute(query, (user_id,)).fetchall()
     
     conn.close()
     

@@ -1133,6 +1133,28 @@ def test_sqlalchemy():
             'traceback': traceback.format_exc()
         }), 500
 
+@app.route('/test-modular')
+def test_modular():
+    """Testa se os módulos podem ser importados"""
+    try:
+        from routes.auth import auth_bp
+        from routes.transactions import transactions_bp
+        from routes.metas import metas_bp
+        
+        return jsonify({
+            'success': True,
+            'message': '✅ Módulos importados com sucesso!',
+            'modules': ['auth', 'transactions', 'metas'],
+            'note': 'Blueprints não estão registrados no app.py atual, mas os módulos funcionam!'
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
+
 @app.after_request
 def set_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'

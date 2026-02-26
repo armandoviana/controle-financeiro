@@ -363,6 +363,7 @@ def gastos():
     return jsonify([dict(g) for g in gastos])
 
 @app.route('/api/resumo')
+@api_error_handler
 @login_required
 def resumo():
     conn = get_db()
@@ -377,6 +378,7 @@ def resumo():
     })
 
 @app.route('/api/evolucao')
+@api_error_handler
 @login_required
 def evolucao():
     conn = get_db()
@@ -446,6 +448,7 @@ def metas():
     return jsonify([dict(m) for m in metas])
 
 @app.route('/api/alertas')
+@api_error_handler
 @login_required
 def alertas():
     conn = get_db()
@@ -465,6 +468,7 @@ def marcar_alerta_lido(alerta_id):
     return jsonify({'success': True})
 
 @app.route('/api/comparacao')
+@api_error_handler
 @login_required
 def comparacao():
     conn = get_db()
@@ -505,6 +509,7 @@ def comparacao():
     })
 
 @app.route('/api/backup')
+@api_error_handler
 @login_required
 def backup():
     import json
@@ -613,6 +618,7 @@ def gerar_recorrentes():
     return jsonify({'success': True, 'gerados': gerados})
 
 @app.route('/api/previsoes')
+@api_error_handler
 @login_required
 def previsoes():
     from datetime import datetime
@@ -648,6 +654,7 @@ def previsoes():
     return jsonify(previsoes)
 
 @app.route('/api/gastos/mes')
+@api_error_handler
 @login_required
 def gastos_por_mes():
     from datetime import datetime
@@ -667,6 +674,7 @@ def gastos_por_mes():
     return jsonify([dict(g) for g in gastos])
 
 @app.route('/api/relatorio-ir')
+@api_error_handler
 @login_required
 def relatorio_ir():
     from datetime import datetime
@@ -695,6 +703,7 @@ def relatorio_ir():
     })
 
 @app.route('/api/tags')
+@api_error_handler
 @login_required
 def listar_tags():
     conn = get_db()
@@ -711,6 +720,7 @@ def listar_tags():
     return jsonify(sorted([t.strip() for t in todas_tags if t.strip()]))
 
 @app.route('/api/exportar/excel')
+@api_error_handler
 @login_required
 def exportar_excel():
     from openpyxl import Workbook

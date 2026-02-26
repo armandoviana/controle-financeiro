@@ -308,6 +308,90 @@ def receitas():
     conn.close()
     return jsonify([dict(r) for r in receitas])
 
+@app.route('/api/receitas-orm', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@api_error_handler
+@login_required
+def receitas_orm():
+    """Versão ORM da rota receitas (TESTE)"""
+    from models.transaction import Receita
+    from datetime import datetime
+    
+    user_id = session.get('user_id')
+    
+    if request.method == 'POST':
+        data = request.json
+        
+        # Validação
+        if not data.get('descricao') or not data.get('valor') or not data.get('tipo') or not data.get('data'):
+            return jsonify({'success': False, 'message': 'Dados incompletos'}), 400
+        
+        try:
+            valor = float(data['valor'])
+            if valor <= 0:
+                raise ValueError('Valor deve ser positivo')
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'message': 'Valor inválido'}), 400
+        
+        # Criar receita com ORM
+        receita = Receita(
+            user_id=user_id,
+            descricao=data['descricao'][:200],
+            valor=valor,
+            tipo=data['tipo'],
+            data=datetime.strptime(data['data'], '%Y-%m-%d').date(),
+            notas=data.get('notas', ''),
+            tags=data.get('tags', '')
+        )
+        db.session.add(receita)
+        db.session.commit()
+        return jsonify({'success': True})
+    
+    elif request.method == 'PUT':
+        data = request.json
+        receita_id = data.get('id')
+        
+        if not receita_id:
+            return jsonify({'success': False, 'message': 'ID não fornecido'}), 400
+        
+        try:
+            valor = float(data['valor'])
+            if valor <= 0:
+                raise ValueError('Valor deve ser positivo')
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'message': 'Valor inválido'}), 400
+        
+        # Atualizar com ORM
+        receita = Receita.query.filter_by(id=receita_id, user_id=user_id).first()
+        if not receita:
+            return jsonify({'success': False, 'message': 'Receita não encontrada'}), 404
+        
+        receita.descricao = data['descricao'][:200]
+        receita.valor = valor
+        receita.tipo = data['tipo']
+        receita.data = datetime.strptime(data['data'], '%Y-%m-%d').date()
+        receita.notas = data.get('notas', '')
+        receita.tags = data.get('tags', '')
+        db.session.commit()
+        return jsonify({'success': True})
+    
+    elif request.method == 'DELETE':
+        receita_id = request.args.get('id')
+        if not receita_id:
+            return jsonify({'success': False, 'message': 'ID não fornecido'}), 400
+        
+        # Deletar com ORM
+        receita = Receita.query.filter_by(id=receita_id, user_id=user_id).first()
+        if not receita:
+            return jsonify({'success': False, 'message': 'Receita não encontrada'}), 404
+        
+        db.session.delete(receita)
+        db.session.commit()
+        return jsonify({'success': True})
+    
+    # GET - Listar receitas
+    receitas = Receita.query.filter_by(user_id=user_id).order_by(Receita.data.desc()).all()
+    return jsonify([r.to_dict() for r in receitas])
+
 @app.route('/api/gastos', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @login_required
 def gastos():

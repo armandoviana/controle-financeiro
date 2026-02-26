@@ -956,6 +956,37 @@ def migrar_db():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/adicionar-user-id')
+def adicionar_user_id():
+    """Adiciona coluna user_id em todas as tabelas que não têm"""
+    try:
+        conn = get_db()
+        is_postgres = hasattr(conn, 'cursor_factory')
+        cursor = conn.cursor()
+        
+        tabelas = ['receitas', 'gastos', 'metas', 'alertas', 'comprovantes', 'recorrentes', 'previsoes']
+        
+        for tabela in tabelas:
+            try:
+                # Tenta adicionar a coluna (ignora se já existe)
+                if is_postgres:
+                    cursor.execute(f'ALTER TABLE {tabela} ADD COLUMN IF NOT EXISTS user_id INTEGER DEFAULT 1')
+                else:
+                    # SQLite não tem IF NOT EXISTS no ALTER TABLE
+                    try:
+                        cursor.execute(f'ALTER TABLE {tabela} ADD COLUMN user_id INTEGER DEFAULT 1')
+                    except:
+                        pass  # Coluna já existe
+                conn.commit()
+                print(f"✅ Coluna user_id adicionada em {tabela}")
+            except Exception as e:
+                print(f"⚠️ Erro em {tabela}: {e}")
+        
+        conn.close()
+        return jsonify({'success': True, 'message': 'Colunas user_id adicionadas com sucesso!'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.after_request
 def set_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'

@@ -15,7 +15,13 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 
-init_db()
+# Inicializar banco de dados
+try:
+    init_db()
+    print("✅ Banco de dados inicializado com sucesso!")
+except Exception as e:
+    print(f"⚠️ Erro ao inicializar banco: {e}")
+    print("Tentando criar tabelas...")
 
 # Credenciais com hash (MUDE ISSO!)
 USUARIO = 'casal'
@@ -911,6 +917,16 @@ def importar_excel():
         return jsonify({'error': f'Erro ao importar: {str(e)}'}), 500
 
 # Proteção contra CSRF (básica)
+@app.route('/api/migrar-db')
+def migrar_db():
+    """Rota para forçar migração do banco (criar tabelas)"""
+    try:
+        from database import init_db
+        init_db()
+        return jsonify({'success': True, 'message': 'Banco de dados migrado com sucesso!'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.after_request
 def set_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'

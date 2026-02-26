@@ -73,8 +73,7 @@ def get_db():
         if database_url.startswith('postgres://'):
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
         
-        conn = psycopg2.connect(database_url)
-        conn.cursor_factory = psycopg2.extras.RealDictCursor
+        conn = psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor)
         return conn
     else:
         # SQLite (local)

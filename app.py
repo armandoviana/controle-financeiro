@@ -74,6 +74,19 @@ def get_db():
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
         
         conn = psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Wrapper para converter ? em %s automaticamente
+        original_execute = conn.cursor().execute
+        def execute_wrapper(query, params=None):
+            query = query.replace('?', '%s')
+            cursor = conn.cursor()
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            return cursor
+        conn.execute = execute_wrapper
+        
         return conn
     else:
         # SQLite (local)

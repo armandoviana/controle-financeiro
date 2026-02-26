@@ -10,10 +10,11 @@ Você consegue:
 - Acompanhar se está gastando mais que o normal
 - Criar metas pra juntar grana
 - Filtrar gastos por mês específico
-- Ver gráficos de quanto você gasta em cada categoria
+- Ver gráficos interativos de pizza e evolução mensal
 - Exportar e importar dados em Excel
+- Instalar como app no celular (funciona offline)
 
-O dashboard mostra tudo de forma visual, com gráficos e cards coloridos. Nada muito complexo, só o necessário pra você não perder o controle.
+O dashboard mostra tudo de forma visual, com gráficos interativos e cards coloridos. Tem loading spinners pra você saber quando está processando. Nada muito complexo, só o necessário pra você não perder o controle.
 
 ## Como rodar
 
@@ -61,15 +62,21 @@ Você precisa configurar usuário e senha no arquivo `app.py`. Tem uma função 
 
 **Excel**: Exporta tudo pra Excel se você quiser fazer suas próprias análises. E também importa, caso você tenha dados em planilha.
 
+**Gráficos interativos**: Usa Chart.js pra mostrar gráfico de pizza (distribuição por categoria) e gráfico de linha (evolução de receitas vs gastos). Dá pra ver os valores passando o mouse por cima.
+
+**PWA**: Funciona como app instalável. Adiciona na tela inicial do celular e usa offline depois da primeira carga. Tem ícone próprio e tudo.
+
 ## Mobile
 
 Funciona bem no celular. O menu fica embaixo, igual apps tipo Instagram ou WhatsApp. Testei no iPhone e Android, roda tranquilo. Dá pra adicionar na tela inicial e usar como se fosse um app.
 
 ## Tecnologias
 
-Usei Flask porque é simples e direto. O banco é SQLite - um arquivo só, fácil de fazer backup. O frontend é HTML, CSS e JavaScript puro, sem frameworks pesados que deixam tudo lento.
+Usei Flask porque é simples e direto. O banco é SQLite localmente, mas suporta PostgreSQL em produção pra dados persistentes. O frontend é HTML, CSS e JavaScript puro, sem frameworks pesados que deixam tudo lento.
 
 O visual tem uns efeitos de vidro (glassmorphism) e gradientes roxos. Achei bonito e moderno sem ser exagerado.
+
+Os gráficos usam Chart.js 4.4 - leve, rápido e bonito. O PWA usa Service Worker pra cache offline.
 
 ## Segurança
 
@@ -78,10 +85,10 @@ Tem login com senha (hash SHA-256), limite de tentativas, e uns headers de segur
 ## Ideias futuras
 
 Talvez eu adicione:
-- Gráficos mais interativos
-- Modo offline completo (PWA)
+- Comparação ano a ano
 - Integração com banco (Open Banking)
 - Notificações push
+- Modo escuro persistente
 
 Mas por enquanto está funcionando bem do jeito que está. Prefiro manter simples.
 

@@ -379,12 +379,13 @@ def evolucao():
 @login_required
 def metas():
     conn = get_db()
+    user_id = session.get('user_id')
     
     if request.method == 'POST':
         data = request.json
-        conn.execute('''INSERT INTO metas (titulo, valor_alvo, valor_atual, data_inicio, data_fim, tipo)
-                       VALUES (?, ?, ?, ?, ?, ?)''',
-                    (data['titulo'], data['valor_alvo'], data.get('valor_atual', 0),
+        conn.execute('''INSERT INTO metas (user_id, titulo, valor_alvo, valor_atual, data_inicio, data_fim, tipo)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                    (user_id, data['titulo'], data['valor_alvo'], data.get('valor_atual', 0),
                      data['data_inicio'], data['data_fim'], data['tipo']))
         conn.commit()
         conn.close()
@@ -392,20 +393,20 @@ def metas():
     
     elif request.method == 'PUT':
         data = request.json
-        conn.execute('UPDATE metas SET valor_atual = ? WHERE id = ?',
-                    (data['valor_atual'], data['id']))
+        conn.execute('UPDATE metas SET valor_atual = ? WHERE id = ? AND user_id = ?',
+                    (data['valor_atual'], data['id'], user_id))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
     
     elif request.method == 'DELETE':
         meta_id = request.args.get('id')
-        conn.execute('DELETE FROM metas WHERE id = ?', (meta_id,))
+        conn.execute('DELETE FROM metas WHERE id = ? AND user_id = ?', (meta_id, user_id))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
     
-    metas = conn.execute('SELECT * FROM metas WHERE ativo = 1 ORDER BY data_fim').fetchall()
+    metas = conn.execute('SELECT * FROM metas WHERE user_id=? AND ativo = 1 ORDER BY data_fim', (user_id,)).fetchall()
     conn.close()
     return jsonify([dict(m) for m in metas])
 
@@ -413,7 +414,8 @@ def metas():
 @login_required
 def alertas():
     conn = get_db()
-    alertas = conn.execute('SELECT * FROM alertas WHERE lido = 0 ORDER BY data DESC LIMIT 10').fetchall()
+    user_id = session.get('user_id')
+    alertas = conn.execute('SELECT * FROM alertas WHERE user_id=? AND lido = 0 ORDER BY data DESC LIMIT 10', (user_id,)).fetchall()
     conn.close()
     return jsonify([dict(a) for a in alertas])
 
@@ -421,7 +423,8 @@ def alertas():
 @login_required
 def marcar_alerta_lido(alerta_id):
     conn = get_db()
-    conn.execute('UPDATE alertas SET lido = 1 WHERE id = ?', (alerta_id,))
+    user_id = session.get('user_id')
+    conn.execute('UPDATE alertas SET lido = 1 WHERE id = ? AND user_id = ?', (alerta_id, user_id))
     conn.commit()
     conn.close()
     return jsonify({'success': True})
@@ -430,27 +433,28 @@ def marcar_alerta_lido(alerta_id):
 @login_required
 def comparacao():
     conn = get_db()
+    user_id = session.get('user_id')
     
     # Mês atual
     mes_atual = conn.execute('''
         SELECT SUM(valor) as total FROM gastos 
-        WHERE strftime('%Y-%m', data) = strftime('%Y-%m', 'now')
-    ''').fetchone()['total'] or 0
+        WHERE user_id=? AND strftime('%Y-%m', data) = strftime('%Y-%m', 'now')
+    ''', (user_id,)).fetchone()['total'] or 0
     
     # Mês anterior
     mes_anterior = conn.execute('''
         SELECT SUM(valor) as total FROM gastos 
-        WHERE strftime('%Y-%m', data) = strftime('%Y-%m', date('now', '-1 month'))
-    ''').fetchone()['total'] or 0
+        WHERE user_id=? AND strftime('%Y-%m', data) = strftime('%Y-%m', date('now', '-1 month'))
+    ''', (user_id,)).fetchone()['total'] or 0
     
     # Média dos últimos 3 meses
     media_3_meses = conn.execute('''
         SELECT AVG(total) as media FROM (
             SELECT SUM(valor) as total FROM gastos 
-            WHERE date(data) >= date('now', '-3 months')
+            WHERE user_id=? AND date(data) >= date('now', '-3 months')
             GROUP BY strftime('%Y-%m', data)
         )
-    ''').fetchone()['media'] or 0
+    ''', (user_id,)).fetchone()['media'] or 0
     
     conn.close()
     
@@ -472,9 +476,10 @@ def backup():
     from datetime import datetime
     
     conn = get_db()
-    receitas = conn.execute('SELECT * FROM receitas').fetchall()
-    gastos = conn.execute('SELECT * FROM gastos').fetchall()
-    metas = conn.execute('SELECT * FROM metas').fetchall()
+    user_id = session.get('user_id')
+    receitas = conn.execute('SELECT * FROM receitas WHERE user_id=?', (user_id,)).fetchall()
+    gastos = conn.execute('SELECT * FROM gastos WHERE user_id=?', (user_id,)).fetchall()
+    metas = conn.execute('SELECT * FROM metas WHERE user_id=?', (user_id,)).fetchall()
     conn.close()
     
     backup_data = {
@@ -491,13 +496,15 @@ def backup():
 @app.route('/api/comprovantes', methods=['GET', 'POST'])
 @login_required
 def comprovantes():
+    from datetime import datetime
     conn = get_db()
+    user_id = session.get('user_id')
     
     if request.method == 'POST':
         data = request.json
-        conn.execute('''INSERT INTO comprovantes (transacao_tipo, transacao_id, arquivo_base64, nome_arquivo, data_upload)
-                       VALUES (?, ?, ?, ?, ?)''',
-                    (data['transacao_tipo'], data['transacao_id'], data['arquivo_base64'],
+        conn.execute('''INSERT INTO comprovantes (user_id, transacao_tipo, transacao_id, arquivo_base64, nome_arquivo, data_upload)
+                       VALUES (?, ?, ?, ?, ?, ?)''',
+                    (user_id, data['transacao_tipo'], data['transacao_id'], data['arquivo_base64'],
                      data.get('nome_arquivo', 'comprovante.jpg'), datetime.now().isoformat()))
         conn.commit()
         conn.close()
@@ -505,8 +512,8 @@ def comprovantes():
     
     tipo = request.args.get('tipo')
     tid = request.args.get('id')
-    comprovantes = conn.execute('SELECT * FROM comprovantes WHERE transacao_tipo = ? AND transacao_id = ?',
-                                (tipo, tid)).fetchall()
+    comprovantes = conn.execute('SELECT * FROM comprovantes WHERE user_id=? AND transacao_tipo = ? AND transacao_id = ?',
+                                (user_id, tipo, tid)).fetchall()
     conn.close()
     return jsonify([dict(c) for c in comprovantes])
 
@@ -514,31 +521,32 @@ def comprovantes():
 @login_required
 def recorrentes():
     conn = get_db()
+    user_id = session.get('user_id')
     
     if request.method == 'POST':
         data = request.json
-        conn.execute('''INSERT INTO recorrentes (descricao, valor, categoria, dia_vencimento)
-                       VALUES (?, ?, ?, ?)''',
-                    (data['descricao'], data['valor'], data['categoria'], data['dia_vencimento']))
+        conn.execute('''INSERT INTO recorrentes (user_id, descricao, valor, categoria, dia_vencimento)
+                       VALUES (?, ?, ?, ?, ?)''',
+                    (user_id, data['descricao'], data['valor'], data['categoria'], data['dia_vencimento']))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
     
     elif request.method == 'PUT':
         data = request.json
-        conn.execute('UPDATE recorrentes SET ativo = ? WHERE id = ?', (data['ativo'], data['id']))
+        conn.execute('UPDATE recorrentes SET ativo = ? WHERE id = ? AND user_id = ?', (data['ativo'], data['id'], user_id))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
     
     elif request.method == 'DELETE':
         rid = request.args.get('id')
-        conn.execute('DELETE FROM recorrentes WHERE id = ?', (rid,))
+        conn.execute('DELETE FROM recorrentes WHERE id = ? AND user_id = ?', (rid, user_id))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
     
-    recorrentes = conn.execute('SELECT * FROM recorrentes WHERE ativo = 1').fetchall()
+    recorrentes = conn.execute('SELECT * FROM recorrentes WHERE user_id=? AND ativo = 1', (user_id,)).fetchall()
     conn.close()
     return jsonify([dict(r) for r in recorrentes])
 
@@ -547,10 +555,11 @@ def recorrentes():
 def gerar_recorrentes():
     from datetime import datetime
     conn = get_db()
+    user_id = session.get('user_id')
     hoje = datetime.now()
     mes_atual = hoje.strftime('%Y-%m')
     
-    recorrentes = conn.execute('SELECT * FROM recorrentes WHERE ativo = 1').fetchall()
+    recorrentes = conn.execute('SELECT * FROM recorrentes WHERE user_id=? AND ativo = 1', (user_id,)).fetchall()
     gerados = 0
     
     for rec in recorrentes:
@@ -559,9 +568,9 @@ def gerar_recorrentes():
             dia = min(rec['dia_vencimento'], 28)
             data_gasto = f"{mes_atual}-{dia:02d}"
             
-            conn.execute('INSERT INTO gastos (descricao, valor, categoria, data, tags) VALUES (?, ?, ?, ?, ?)',
-                        (rec['descricao'], rec['valor'], rec['categoria'], data_gasto, 'recorrente'))
-            conn.execute('UPDATE recorrentes SET ultima_geracao = ? WHERE id = ?', (mes_atual, rec['id']))
+            conn.execute('INSERT INTO gastos (user_id, descricao, valor, categoria, data, tags) VALUES (?, ?, ?, ?, ?, ?)',
+                        (user_id, rec['descricao'], rec['valor'], rec['categoria'], data_gasto, 'recorrente'))
+            conn.execute('UPDATE recorrentes SET ultima_geracao = ? WHERE id = ? AND user_id = ?', (mes_atual, rec['id'], user_id))
             gerados += 1
     
     conn.commit()
@@ -573,6 +582,7 @@ def gerar_recorrentes():
 def previsoes():
     from datetime import datetime
     conn = get_db()
+    user_id = session.get('user_id')
     
     categorias = ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Educação', 'Outros']
     mes_atual = datetime.now().strftime('%Y-%m')
@@ -582,15 +592,15 @@ def previsoes():
         media = conn.execute('''
             SELECT AVG(total) as media FROM (
                 SELECT SUM(valor) as total FROM gastos 
-                WHERE categoria = ? AND date(data) >= date('now', '-3 months')
+                WHERE user_id=? AND categoria = ? AND date(data) >= date('now', '-3 months')
                 GROUP BY strftime('%Y-%m', data)
             )
-        ''', (cat,)).fetchone()['media'] or 0
+        ''', (user_id, cat)).fetchone()['media'] or 0
         
         real = conn.execute('''
             SELECT SUM(valor) as total FROM gastos 
-            WHERE categoria = ? AND strftime('%Y-%m', data) = ?
-        ''', (cat, mes_atual)).fetchone()['total'] or 0
+            WHERE user_id=? AND categoria = ? AND strftime('%Y-%m', data) = ?
+        ''', (user_id, cat, mes_atual)).fetchone()['total'] or 0
         
         previsoes.append({
             'categoria': cat,
@@ -605,16 +615,18 @@ def previsoes():
 @app.route('/api/gastos/mes')
 @login_required
 def gastos_por_mes():
+    from datetime import datetime
     conn = get_db()
+    user_id = session.get('user_id')
     mes = request.args.get('mes', datetime.now().strftime('%Y-%m'))
     
     gastos = conn.execute('''
         SELECT *, 
         CASE WHEN tags LIKE '%recorrente%' THEN 1 ELSE 0 END as eh_recorrente
         FROM gastos 
-        WHERE strftime('%Y-%m', data) = ?
+        WHERE user_id=? AND strftime('%Y-%m', data) = ?
         ORDER BY eh_recorrente DESC, data DESC
-    ''', (mes,)).fetchall()
+    ''', (user_id, mes)).fetchall()
     
     conn.close()
     return jsonify([dict(g) for g in gastos])
@@ -622,19 +634,21 @@ def gastos_por_mes():
 @app.route('/api/relatorio-ir')
 @login_required
 def relatorio_ir():
+    from datetime import datetime
     conn = get_db()
+    user_id = session.get('user_id')
     ano = request.args.get('ano', datetime.now().year)
     
     receitas_tributaveis = conn.execute('''
         SELECT SUM(valor) as total FROM receitas 
-        WHERE strftime('%Y', data) = ? AND tipo IN ('Salário', 'Freelance')
-    ''', (str(ano),)).fetchone()['total'] or 0
+        WHERE user_id=? AND strftime('%Y', data) = ? AND tipo IN ('Salário', 'Freelance')
+    ''', (user_id, str(ano))).fetchone()['total'] or 0
     
     despesas_dedutiveis = conn.execute('''
         SELECT categoria, SUM(valor) as total FROM gastos 
-        WHERE strftime('%Y', data) = ? AND categoria IN ('Saúde', 'Educação')
+        WHERE user_id=? AND strftime('%Y', data) = ? AND categoria IN ('Saúde', 'Educação')
         GROUP BY categoria
-    ''', (str(ano),)).fetchall()
+    ''', (user_id, str(ano))).fetchall()
     
     conn.close()
     
@@ -649,8 +663,9 @@ def relatorio_ir():
 @login_required
 def listar_tags():
     conn = get_db()
-    tags_gastos = conn.execute('SELECT DISTINCT tags FROM gastos WHERE tags IS NOT NULL AND tags != ""').fetchall()
-    tags_receitas = conn.execute('SELECT DISTINCT tags FROM receitas WHERE tags IS NOT NULL AND tags != ""').fetchall()
+    user_id = session.get('user_id')
+    tags_gastos = conn.execute('SELECT DISTINCT tags FROM gastos WHERE user_id=? AND tags IS NOT NULL AND tags != ""', (user_id,)).fetchall()
+    tags_receitas = conn.execute('SELECT DISTINCT tags FROM receitas WHERE user_id=? AND tags IS NOT NULL AND tags != ""', (user_id,)).fetchall()
     conn.close()
     
     todas_tags = set()
@@ -669,9 +684,10 @@ def exportar_excel():
     from flask import send_file
     
     conn = get_db()
-    receitas = conn.execute('SELECT * FROM receitas ORDER BY data DESC').fetchall()
-    gastos = conn.execute('SELECT * FROM gastos ORDER BY data DESC').fetchall()
-    metas = conn.execute('SELECT * FROM metas ORDER BY data_inicio DESC').fetchall()
+    user_id = session.get('user_id')
+    receitas = conn.execute('SELECT * FROM receitas WHERE user_id=? ORDER BY data DESC', (user_id,)).fetchall()
+    gastos = conn.execute('SELECT * FROM gastos WHERE user_id=? ORDER BY data DESC', (user_id,)).fetchall()
+    metas = conn.execute('SELECT * FROM metas WHERE user_id=? ORDER BY data_inicio DESC', (user_id,)).fetchall()
     conn.close()
     
     wb = Workbook()
@@ -729,6 +745,7 @@ def importar_excel():
     try:
         wb = load_workbook(BytesIO(file.read()))
         conn = get_db()
+        user_id = session.get('user_id')
         
         importados = {'receitas': 0, 'gastos': 0, 'metas': 0}
         
@@ -737,9 +754,9 @@ def importar_excel():
             ws = wb['Receitas']
             for row in ws.iter_rows(min_row=2, values_only=True):
                 if row[0]:  # Se tem data
-                    conn.execute('''INSERT INTO receitas (data, descricao, valor, tipo, notas, tags)
-                                    VALUES (?, ?, ?, ?, ?, ?)''',
-                                (row[0], row[1], row[2], row[3], row[4] or '', row[5] or ''))
+                    conn.execute('''INSERT INTO receitas (user_id, data, descricao, valor, tipo, notas, tags)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                                (user_id, row[0], row[1], row[2], row[3], row[4] or '', row[5] or ''))
                     importados['receitas'] += 1
         
         # Importar Gastos
@@ -747,9 +764,9 @@ def importar_excel():
             ws = wb['Gastos']
             for row in ws.iter_rows(min_row=2, values_only=True):
                 if row[0]:
-                    conn.execute('''INSERT INTO gastos (data, descricao, valor, categoria, notas, tags)
-                                    VALUES (?, ?, ?, ?, ?, ?)''',
-                                (row[0], row[1], row[2], row[3], row[4] or '', row[5] or ''))
+                    conn.execute('''INSERT INTO gastos (user_id, data, descricao, valor, categoria, notas, tags)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                                (user_id, row[0], row[1], row[2], row[3], row[4] or '', row[5] or ''))
                     importados['gastos'] += 1
         
         # Importar Metas
@@ -758,9 +775,9 @@ def importar_excel():
             for row in ws.iter_rows(min_row=2, values_only=True):
                 if row[0]:
                     ativo = 1 if row[6] == 'Sim' else 0
-                    conn.execute('''INSERT INTO metas (titulo, valor_alvo, valor_atual, data_inicio, data_fim, tipo, ativo)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                                (row[0], row[1], row[2], row[3], row[4], row[5], ativo))
+                    conn.execute('''INSERT INTO metas (user_id, titulo, valor_alvo, valor_atual, data_inicio, data_fim, tipo, ativo)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                                (user_id, row[0], row[1], row[2], row[3], row[4], row[5], ativo))
                     importados['metas'] += 1
         
         conn.commit()

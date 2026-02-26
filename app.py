@@ -633,20 +633,26 @@ def previsoes():
     previsoes = []
     
     for cat in categorias:
-        media_result = db_execute(conn, '''
-            SELECT AVG(total) as media FROM (
-                SELECT SUM(valor) as total FROM gastos 
-                WHERE user_id=? AND categoria = ? AND date(data) >= date('now', '-3 months')
-                GROUP BY strftime('%Y-%m', data)
-            )
-        ''', (user_id, cat)).fetchone()
-        media = float(media_result['media'] or 0) if media_result else 0
+        try:
+            media_result = db_execute(conn, '''
+                SELECT AVG(total) as media FROM (
+                    SELECT SUM(valor) as total FROM gastos 
+                    WHERE user_id=? AND categoria = ? AND date(data) >= date('now', '-3 months')
+                    GROUP BY strftime('%Y-%m', data)
+                )
+            ''', (user_id, cat)).fetchone()
+            media = float(media_result['media']) if media_result and media_result['media'] else 0
+        except:
+            media = 0
         
-        real_result = db_execute(conn, '''
-            SELECT SUM(valor) as total FROM gastos 
-            WHERE user_id=? AND categoria = ? AND strftime('%Y-%m', data) = ?
-        ''', (user_id, cat, mes_atual)).fetchone()
-        real = float(real_result['total'] or 0) if real_result else 0
+        try:
+            real_result = db_execute(conn, '''
+                SELECT SUM(valor) as total FROM gastos 
+                WHERE user_id=? AND categoria = ? AND strftime('%Y-%m', data) = ?
+            ''', (user_id, cat, mes_atual)).fetchone()
+            real = float(real_result['total']) if real_result and real_result['total'] else 0
+        except:
+            real = 0
         
         previsoes.append({
             'categoria': cat,
@@ -657,7 +663,6 @@ def previsoes():
     
     conn.close()
     return jsonify(previsoes)
-    conn.close()
     return jsonify(previsoes)
 
 @app.route('/api/gastos/mes')

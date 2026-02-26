@@ -80,19 +80,6 @@ def get_db():
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
         
         conn = psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor)
-        
-        # Wrapper para converter ? em %s automaticamente
-        original_execute = conn.cursor().execute
-        def execute_wrapper(query, params=None):
-            query = query.replace('?', '%s')
-            cursor = conn.cursor()
-            if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
-            return cursor
-        conn.execute = execute_wrapper
-        
         return conn
     else:
         # SQLite (local)
@@ -126,7 +113,9 @@ def login():
         try:
             conn = get_db()
             cursor = conn.cursor()
-            cursor.execute('SELECT id, username, password_hash FROM usuarios WHERE username = ?', (usuario,))
+            # PostgreSQL usa %s, SQLite usa ?
+            query = 'SELECT id, username, password_hash FROM usuarios WHERE username = %s' if hasattr(conn, 'cursor_factory') else 'SELECT id, username, password_hash FROM usuarios WHERE username = ?'
+            cursor.execute(query, (usuario,))
             user = cursor.fetchone()
             conn.close()
             
@@ -178,7 +167,10 @@ def cadastro():
             # Verificar se username já existe
             conn = get_db()
             cursor = conn.cursor()
-            cursor.execute('SELECT id FROM usuarios WHERE username = ?', (username,))
+            is_postgres = hasattr(conn, 'cursor_factory')
+            
+            query = 'SELECT id FROM usuarios WHERE username = %s' if is_postgres else 'SELECT id FROM usuarios WHERE username = ?'
+            cursor.execute(query, (username,))
             if cursor.fetchone():
                 conn.close()
                 return jsonify({'success': False, 'message': 'Username já está em uso'}), 400
@@ -188,8 +180,8 @@ def cadastro():
             senha_hash = hash_senha(senha)
             data_criacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             
-            cursor.execute('INSERT INTO usuarios (username, password_hash, email, data_criacao) VALUES (?, ?, ?, ?)',
-                        (username, senha_hash, email, data_criacao))
+            query = 'INSERT INTO usuarios (username, password_hash, email, data_criacao) VALUES (%s, %s, %s, %s)' if is_postgres else 'INSERT INTO usuarios (username, password_hash, email, data_criacao) VALUES (?, ?, ?, ?)'
+            cursor.execute(query, (username, senha_hash, email, data_criacao))
             conn.commit()
             conn.close()
             

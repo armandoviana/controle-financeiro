@@ -393,7 +393,7 @@ def evolucao():
         GROUP BY mes
         ORDER BY mes
     '''
-    receitas_mes = db_execute(conn, query, (user_id,)).fetchall()
+    receitas_mes = db_execute(conn, query, (user_id,)).fetchall() or []
     
     query = '''
         SELECT strftime('%Y-%m', data) as mes,
@@ -403,13 +403,13 @@ def evolucao():
         GROUP BY mes
         ORDER BY mes
     '''
-    gastos_mes = db_execute(conn, query, (user_id,)).fetchall()
+    gastos_mes = db_execute(conn, query, (user_id,)).fetchall() or []
     
     conn.close()
     
     return jsonify({
-        'receitas': [{'mes': r['mes'], 'valor': r['total']} for r in receitas_mes],
-        'gastos': [{'mes': g['mes'], 'valor': g['total']} for g in gastos_mes]
+        'receitas': [{'mes': r['mes'], 'valor': float(r['total'] or 0)} for r in receitas_mes],
+        'gastos': [{'mes': g['mes'], 'valor': float(g['total'] or 0)} for g in gastos_mes]
     })
 
 @app.route('/api/metas', methods=['GET', 'POST', 'PUT', 'DELETE'])
@@ -475,25 +475,28 @@ def comparacao():
     user_id = session.get('user_id')
     
     # Mês atual
-    mes_atual = db_execute(conn, '''
+    mes_atual_result = db_execute(conn, '''
         SELECT SUM(valor) as total FROM gastos 
         WHERE user_id=? AND strftime('%Y-%m', data) = strftime('%Y-%m', 'now')
-    ''', (user_id,)).fetchone()['total'] or 0
+    ''', (user_id,)).fetchone()
+    mes_atual = float(mes_atual_result['total'] or 0) if mes_atual_result else 0
     
     # Mês anterior
-    mes_anterior = db_execute(conn, '''
+    mes_anterior_result = db_execute(conn, '''
         SELECT SUM(valor) as total FROM gastos 
         WHERE user_id=? AND strftime('%Y-%m', data) = strftime('%Y-%m', date('now', '-1 month'))
-    ''', (user_id,)).fetchone()['total'] or 0
+    ''', (user_id,)).fetchone()
+    mes_anterior = float(mes_anterior_result['total'] or 0) if mes_anterior_result else 0
     
     # Média dos últimos 3 meses
-    media_3_meses = db_execute(conn, '''
+    media_result = db_execute(conn, '''
         SELECT AVG(total) as media FROM (
             SELECT SUM(valor) as total FROM gastos 
             WHERE user_id=? AND date(data) >= date('now', '-3 months')
             GROUP BY strftime('%Y-%m', data)
         )
-    ''', (user_id,)).fetchone()['media'] or 0
+    ''', (user_id,)).fetchone()
+    media_3_meses = float(media_result['media'] or 0) if media_result else 0
     
     conn.close()
     
@@ -630,18 +633,20 @@ def previsoes():
     previsoes = []
     
     for cat in categorias:
-        media = db_execute(conn, '''
+        media_result = db_execute(conn, '''
             SELECT AVG(total) as media FROM (
                 SELECT SUM(valor) as total FROM gastos 
                 WHERE user_id=? AND categoria = ? AND date(data) >= date('now', '-3 months')
                 GROUP BY strftime('%Y-%m', data)
             )
-        ''', (user_id, cat)).fetchone()['media'] or 0
+        ''', (user_id, cat)).fetchone()
+        media = float(media_result['media'] or 0) if media_result else 0
         
-        real = db_execute(conn, '''
+        real_result = db_execute(conn, '''
             SELECT SUM(valor) as total FROM gastos 
             WHERE user_id=? AND categoria = ? AND strftime('%Y-%m', data) = ?
-        ''', (user_id, cat, mes_atual)).fetchone()['total'] or 0
+        ''', (user_id, cat, mes_atual)).fetchone()
+        real = float(real_result['total'] or 0) if real_result else 0
         
         previsoes.append({
             'categoria': cat,
@@ -650,6 +655,8 @@ def previsoes():
             'percentual': round((real / media * 100) if media > 0 else 0, 1)
         })
     
+    conn.close()
+    return jsonify(previsoes)
     conn.close()
     return jsonify(previsoes)
 
@@ -682,16 +689,17 @@ def relatorio_ir():
     user_id = session.get('user_id')
     ano = request.args.get('ano', datetime.now().year)
     
-    receitas_tributaveis = db_execute(conn, '''
+    receitas_result = db_execute(conn, '''
         SELECT SUM(valor) as total FROM receitas 
         WHERE user_id=? AND strftime('%Y', data) = ? AND tipo IN ('Salário', 'Freelance')
-    ''', (user_id, str(ano))).fetchone()['total'] or 0
+    ''', (user_id, str(ano))).fetchone()
+    receitas_tributaveis = float(receitas_result['total'] or 0) if receitas_result else 0
     
     despesas_dedutiveis = db_execute(conn, '''
         SELECT categoria, SUM(valor) as total FROM gastos 
         WHERE user_id=? AND strftime('%Y', data) = ? AND categoria IN ('Saúde', 'Educação')
         GROUP BY categoria
-    ''', (user_id, str(ano))).fetchall()
+    ''', (user_id, str(ano))).fetchall() or []
     
     conn.close()
     
@@ -699,7 +707,7 @@ def relatorio_ir():
         'ano': ano,
         'receitas_tributaveis': receitas_tributaveis,
         'despesas_dedutiveis': [dict(d) for d in despesas_dedutiveis],
-        'total_deducoes': sum(d['total'] for d in despesas_dedutiveis)
+        'total_deducoes': sum(float(d['total'] or 0) for d in despesas_dedutiveis)
     })
 
 @app.route('/api/tags')
@@ -713,11 +721,11 @@ def listar_tags():
     conn.close()
     
     todas_tags = set()
-    for t in tags_gastos + tags_receitas:
-        if t['tags']:
+    for t in (tags_gastos or []) + (tags_receitas or []):
+        if t and t.get('tags'):
             todas_tags.update(t['tags'].split(','))
     
-    return jsonify(sorted([t.strip() for t in todas_tags if t.strip()]))
+    return jsonify(sorted([t.strip() for t in todas_tags if t and t.strip()]))
 
 @app.route('/api/exportar/excel')
 @api_error_handler

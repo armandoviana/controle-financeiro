@@ -16,17 +16,19 @@ class Meta(db.Model):
     concluida = db.Column(db.Boolean, default=False)
     
     def to_dict(self):
+        percentual = round((self.valor_atual / self.valor_alvo * 100) if self.valor_alvo > 0 else 0, 1)
         return {
             'id': self.id,
             'titulo': self.titulo,
             'valor_alvo': self.valor_alvo,
             'valor_atual': self.valor_atual,
-            'data_inicio': self.data_inicio.isoformat() if self.data_inicio else None,
-            'data_fim': self.data_fim.isoformat() if self.data_fim else None,
+            'data_inicio': self.data_inicio.isoformat() if hasattr(self.data_inicio, 'isoformat') else str(self.data_inicio),
+            'data_fim': self.data_fim.isoformat() if hasattr(self.data_fim, 'isoformat') else str(self.data_fim),
             'tipo': self.tipo,
             'concluida': self.concluida,
-            'percentual': round((self.valor_atual / self.valor_alvo * 100) if self.valor_alvo > 0 else 0, 1)
+            'percentual': percentual
         }
     
     def __repr__(self):
-        return f'<Meta {self.titulo} - {self.percentual}%>'
+        percentual = round((self.valor_atual / self.valor_alvo * 100) if self.valor_alvo > 0 else 0, 1)
+        return f'<Meta {self.titulo} - {percentual}%>'

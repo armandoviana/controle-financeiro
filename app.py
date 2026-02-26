@@ -242,71 +242,12 @@ def index():
     return render_template('index.html')
 
 @app.route('/api/receitas', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@api_error_handler
 @login_required
 def receitas():
-    conn = get_db()
-    user_id = session.get('user_id')
-    
-    if request.method == 'POST':
-        data = request.json
-        
-        # Validação de dados
-        if not data.get('descricao') or not data.get('valor') or not data.get('tipo') or not data.get('data'):
-            conn.close()
-            return jsonify({'success': False, 'message': 'Dados incompletos'}), 400
-        
-        try:
-            valor = float(data['valor'])
-            if valor <= 0:
-                raise ValueError('Valor deve ser positivo')
-        except (ValueError, TypeError):
-            conn.close()
-            return jsonify({'success': False, 'message': 'Valor inválido'}), 400
-        
-        db_execute(conn, 'INSERT INTO receitas (user_id, descricao, valor, tipo, data, notas, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                    (user_id, data['descricao'][:200], valor, data['tipo'], data['data'],
-                     data.get('notas', ''), data.get('tags', '')))
-        conn.commit()
-        conn.close()
-        return jsonify({'success': True})
-    
-    elif request.method == 'PUT':
-        data = request.json
-        receita_id = data.get('id')
-        
-        if not receita_id:
-            conn.close()
-            return jsonify({'success': False, 'message': 'ID não fornecido'}), 400
-        
-        try:
-            valor = float(data['valor'])
-            if valor <= 0:
-                raise ValueError('Valor deve ser positivo')
-        except (ValueError, TypeError):
-            conn.close()
-            return jsonify({'success': False, 'message': 'Valor inválido'}), 400
-        
-        db_execute(conn, 'UPDATE receitas SET descricao=?, valor=?, tipo=?, data=?, notas=?, tags=? WHERE id=? AND user_id=?',
-                    (data['descricao'][:200], valor, data['tipo'], data['data'],
-                     data.get('notas', ''), data.get('tags', ''), receita_id, user_id))
-        conn.commit()
-        conn.close()
-        return jsonify({'success': True})
-    
-    elif request.method == 'DELETE':
-        receita_id = request.args.get('id')
-        if not receita_id:
-            conn.close()
-            return jsonify({'success': False, 'message': 'ID não fornecido'}), 400
-        
-        db_execute(conn, 'DELETE FROM receitas WHERE id=? AND user_id=?', (receita_id, user_id))
-        conn.commit()
-        conn.close()
-        return jsonify({'success': True})
-    
-    receitas = db_execute(conn, 'SELECT * FROM receitas WHERE user_id=? ORDER BY data DESC', (user_id,)).fetchall()
-    conn.close()
-    return jsonify([dict(r) for r in receitas])
+    """Rota de receitas usando ORM"""
+    from routes_orm import receitas_orm_handler
+    return receitas_orm_handler()
 
 @app.route('/api/receitas-orm', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @api_error_handler
@@ -393,8 +334,12 @@ def receitas_orm():
     return jsonify([r.to_dict() for r in receitas])
 
 @app.route('/api/gastos', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@api_error_handler
 @login_required
 def gastos():
+    """Rota de gastos usando ORM"""
+    from routes_orm import gastos_orm_handler
+    return gastos_orm_handler()
     conn = get_db()
     user_id = session.get('user_id')
     
@@ -517,8 +462,12 @@ def evolucao():
     })
 
 @app.route('/api/metas', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@api_error_handler
 @login_required
 def metas():
+    """Rota de metas usando ORM"""
+    from routes_orm import metas_orm_handler
+    return metas_orm_handler()
     conn = get_db()
     user_id = session.get('user_id')
     

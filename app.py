@@ -1045,6 +1045,28 @@ def adicionar_user_id():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/fix-metas-concluida')
+def fix_metas_concluida():
+    """Adiciona coluna concluida na tabela metas"""
+    try:
+        conn = get_db()
+        is_postgres = hasattr(conn, 'cursor_factory')
+        cursor = conn.cursor()
+        
+        if is_postgres:
+            cursor.execute('ALTER TABLE metas ADD COLUMN IF NOT EXISTS concluida BOOLEAN DEFAULT FALSE')
+        else:
+            try:
+                cursor.execute('ALTER TABLE metas ADD COLUMN concluida BOOLEAN DEFAULT 0')
+            except:
+                pass  # Coluna já existe
+        
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Coluna concluida adicionada em metas!'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/test-sqlalchemy')
 def test_sqlalchemy():
     """Rota de teste para verificar se SQLAlchemy está funcionando"""

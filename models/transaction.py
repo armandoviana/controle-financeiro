@@ -20,7 +20,7 @@ class Receita(db.Model):
             'descricao': self.descricao,
             'valor': self.valor,
             'tipo': self.tipo,
-            'data': self.data.isoformat() if self.data else None,
+            'data': self.data.isoformat() if hasattr(self.data, 'isoformat') else str(self.data),
             'notas': self.notas,
             'tags': self.tags
         }
@@ -47,7 +47,7 @@ class Gasto(db.Model):
             'descricao': self.descricao,
             'valor': self.valor,
             'categoria': self.categoria,
-            'data': self.data.isoformat() if self.data else None,
+            'data': self.data.isoformat() if hasattr(self.data, 'isoformat') else str(self.data),
             'notas': self.notas,
             'tags': self.tags
         }

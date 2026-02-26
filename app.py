@@ -123,25 +123,31 @@ def login():
         senha_hash = hash_senha(senha)
         
         # Buscar usuário no banco
-        conn = get_db()
-        cursor = conn.execute('SELECT id, username, password_hash FROM usuarios WHERE username = ?', (usuario,))
-        user = cursor.fetchone()
-        conn.close()
-        
-        if user and user['password_hash'] == senha_hash:
-            session.permanent = True
-            session['logged_in'] = True
-            session['user_id'] = user['id']
-            session['usuario'] = user['username']
-            registrar_tentativa(ip, True)
-            return jsonify({'success': True})
-        
-        registrar_tentativa(ip, False)
-        tentativas_restantes = MAX_ATTEMPTS - login_attempts.get(ip, (0, 0))[0]
-        return jsonify({
-            'success': False, 
-            'message': f'Usuário ou senha incorretos. {tentativas_restantes} tentativas restantes.'
-        }), 401
+        try:
+            conn = get_db()
+            cursor = conn.execute('SELECT id, username, password_hash FROM usuarios WHERE username = ?', (usuario,))
+            user = cursor.fetchone()
+            conn.close()
+            
+            if user and user['password_hash'] == senha_hash:
+                session.permanent = True
+                session['logged_in'] = True
+                session['user_id'] = user['id']
+                session['usuario'] = user['username']
+                registrar_tentativa(ip, True)
+                return jsonify({'success': True})
+            
+            registrar_tentativa(ip, False)
+            tentativas_restantes = MAX_ATTEMPTS - login_attempts.get(ip, (0, 0))[0]
+            return jsonify({
+                'success': False, 
+                'message': f'Usuário ou senha incorretos. {tentativas_restantes} tentativas restantes.'
+            }), 401
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'Erro no banco de dados. Acesse /api/migrar-db primeiro. Erro: {str(e)}'
+            }), 500
     
     return render_template('login.html')
 

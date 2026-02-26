@@ -66,6 +66,19 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def api_error_handler(f):
+    """Decorator que captura erros e retorna JSON"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            print(f"❌ Erro em {f.__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'success': False, 'message': f'Erro: {str(e)}'}), 500
+    return decorated_function
+
 def get_db():
     """Retorna conexão com banco de dados (SQLite ou PostgreSQL)"""
     database_url = os.environ.get('DATABASE_URL')

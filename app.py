@@ -116,10 +116,17 @@ def login():
         
         senha_hash = hash_senha(senha)
         
-        if usuario == USUARIO and senha_hash == SENHA_HASH:
+        # Buscar usuário no banco
+        conn = get_db()
+        cursor = conn.execute('SELECT id, username, password_hash FROM usuarios WHERE username = ?', (usuario,))
+        user = cursor.fetchone()
+        conn.close()
+        
+        if user and user['password_hash'] == senha_hash:
             session.permanent = True
             session['logged_in'] = True
-            session['usuario'] = usuario
+            session['user_id'] = user['id']
+            session['usuario'] = user['username']
             registrar_tentativa(ip, True)
             return jsonify({'success': True})
         
@@ -131,6 +138,49 @@ def login():
         }), 401
     
     return render_template('login.html')
+
+@app.route('/cadastro', methods=['GET', 'POST'])
+def cadastro():
+    if request.method == 'POST':
+        data = request.json
+        username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
+        senha = data.get('senha', '')
+        confirmar_senha = data.get('confirmar_senha', '')
+        
+        # Validações
+        if not username or not senha:
+            return jsonify({'success': False, 'message': 'Username e senha são obrigatórios'}), 400
+        
+        if len(username) < 3:
+            return jsonify({'success': False, 'message': 'Username deve ter no mínimo 3 caracteres'}), 400
+        
+        if len(senha) < 6:
+            return jsonify({'success': False, 'message': 'Senha deve ter no mínimo 6 caracteres'}), 400
+        
+        if senha != confirmar_senha:
+            return jsonify({'success': False, 'message': 'As senhas não coincidem'}), 400
+        
+        # Verificar se username já existe
+        conn = get_db()
+        cursor = conn.execute('SELECT id FROM usuarios WHERE username = ?', (username,))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'message': 'Username já está em uso'}), 400
+        
+        # Criar usuário
+        from datetime import datetime
+        senha_hash = hash_senha(senha)
+        data_criacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        conn.execute('INSERT INTO usuarios (username, password_hash, email, data_criacao) VALUES (?, ?, ?, ?)',
+                    (username, senha_hash, email, data_criacao))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Conta criada com sucesso!'})
+    
+    return render_template('cadastro.html')
 
 @app.route('/logout')
 def logout():
@@ -146,6 +196,8 @@ def index():
 @login_required
 def receitas():
     conn = get_db()
+    user_id = session.get('user_id')
+    
     if request.method == 'POST':
         data = request.json
         
@@ -162,8 +214,8 @@ def receitas():
             conn.close()
             return jsonify({'success': False, 'message': 'Valor inválido'}), 400
         
-        conn.execute('INSERT INTO receitas (descricao, valor, tipo, data, notas, tags) VALUES (?, ?, ?, ?, ?, ?)',
-                    (data['descricao'][:200], valor, data['tipo'], data['data'],
+        conn.execute('INSERT INTO receitas (user_id, descricao, valor, tipo, data, notas, tags) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    (user_id, data['descricao'][:200], valor, data['tipo'], data['data'],
                      data.get('notas', ''), data.get('tags', '')))
         conn.commit()
         conn.close()

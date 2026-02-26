@@ -40,8 +40,17 @@ def init_db():
     
     # Tabelas
     tables = [
+        f'''CREATE TABLE IF NOT EXISTS usuarios (
+            id {autoincrement},
+            username {text_type} UNIQUE NOT NULL,
+            password_hash {text_type} NOT NULL,
+            email {text_type},
+            data_criacao {text_type} NOT NULL
+        )''',
+        
         f'''CREATE TABLE IF NOT EXISTS receitas (
             id {autoincrement},
+            user_id {integer_type} NOT NULL,
             descricao {text_type} NOT NULL,
             valor {real_type} NOT NULL,
             tipo {text_type} NOT NULL,
@@ -52,6 +61,7 @@ def init_db():
         
         f'''CREATE TABLE IF NOT EXISTS gastos (
             id {autoincrement},
+            user_id {integer_type} NOT NULL,
             descricao {text_type} NOT NULL,
             valor {real_type} NOT NULL,
             categoria {text_type} NOT NULL,
@@ -62,6 +72,7 @@ def init_db():
         
         f'''CREATE TABLE IF NOT EXISTS metas (
             id {autoincrement},
+            user_id {integer_type} NOT NULL,
             titulo {text_type} NOT NULL,
             valor_alvo {real_type} NOT NULL,
             valor_atual {real_type} DEFAULT 0,
@@ -73,6 +84,7 @@ def init_db():
         
         f'''CREATE TABLE IF NOT EXISTS alertas (
             id {autoincrement},
+            user_id {integer_type} NOT NULL,
             tipo {text_type} NOT NULL,
             mensagem {text_type} NOT NULL,
             data {text_type} NOT NULL,
@@ -81,6 +93,7 @@ def init_db():
         
         f'''CREATE TABLE IF NOT EXISTS comprovantes (
             id {autoincrement},
+            user_id {integer_type} NOT NULL,
             transacao_tipo {text_type} NOT NULL,
             transacao_id {integer_type} NOT NULL,
             arquivo_base64 {text_type} NOT NULL,
@@ -90,6 +103,7 @@ def init_db():
         
         f'''CREATE TABLE IF NOT EXISTS recorrentes (
             id {autoincrement},
+            user_id {integer_type} NOT NULL,
             descricao {text_type} NOT NULL,
             valor {real_type} NOT NULL,
             categoria {text_type} NOT NULL,
@@ -100,6 +114,7 @@ def init_db():
         
         f'''CREATE TABLE IF NOT EXISTS previsoes (
             id {autoincrement},
+            user_id {integer_type} NOT NULL,
             categoria {text_type} NOT NULL,
             mes_referencia {text_type} NOT NULL,
             valor_previsto {real_type} NOT NULL,

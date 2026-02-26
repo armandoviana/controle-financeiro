@@ -729,6 +729,125 @@ def exportar_excel():
         download_name=f'financeiro_{datetime.now().strftime("%Y%m%d")}.xlsx'
     )
 
+@app.route('/api/exportar/modelo-excel')
+def exportar_modelo_excel():
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from io import BytesIO
+    from flask import send_file
+    from datetime import datetime
+    
+    wb = Workbook()
+    
+    # Aba Receitas
+    ws_receitas = wb.active
+    ws_receitas.title = "Receitas"
+    ws_receitas.append(['Data', 'Descrição', 'Valor', 'Tipo', 'Notas', 'Tags'])
+    ws_receitas.append(['2026-02-25', 'Salário', 5000.00, 'Salário', 'Pagamento mensal', 'trabalho,fixo'])
+    ws_receitas.append(['', '', '', 'Salário/Freelance/Investimento/Outros', '', ''])
+    
+    # Aba Gastos
+    ws_gastos = wb.create_sheet("Gastos")
+    ws_gastos.append(['Data', 'Descrição', 'Valor', 'Categoria', 'Notas', 'Tags'])
+    ws_gastos.append(['2026-02-25', 'Aluguel', 1200.00, 'Moradia', 'Apartamento', 'fixo,mensal'])
+    ws_gastos.append(['', '', '', 'Alimentação/Transporte/Moradia/Saúde/Lazer/Educação/Outros', '', ''])
+    
+    # Aba Metas
+    ws_metas = wb.create_sheet("Metas")
+    ws_metas.append(['Título', 'Valor Alvo', 'Valor Atual', 'Data Início', 'Data Fim', 'Tipo', 'Ativo'])
+    ws_metas.append(['Viagem', 5000.00, 1500.00, '2026-01-01', '2026-12-31', 'Lazer', 'Sim'])
+    ws_metas.append(['', '', '', '', '', 'Economia/Investimento/Lazer/Outros', 'Sim/Não'])
+    
+    # Aba Instruções
+    ws_instrucoes = wb.create_sheet("📋 INSTRUÇÕES")
+    instrucoes = [
+        ['COMO USAR ESTA PLANILHA'],
+        [''],
+        ['1. FORMATO DAS DATAS'],
+        ['   Use o formato: AAAA-MM-DD (exemplo: 2026-02-25)'],
+        [''],
+        ['2. VALORES'],
+        ['   Use ponto para decimais (exemplo: 1500.50)'],
+        ['   Não use vírgulas ou símbolos de moeda'],
+        [''],
+        ['3. TIPOS E CATEGORIAS'],
+        ['   Receitas: Salário, Freelance, Investimento, Outros'],
+        ['   Gastos: Alimentação, Transporte, Moradia, Saúde, Lazer, Educação, Outros'],
+        ['   Metas: Economia, Investimento, Lazer, Outros'],
+        [''],
+        ['4. TAGS (OPCIONAL)'],
+        ['   Separe múltiplas tags com vírgula (exemplo: fixo,mensal)'],
+        [''],
+        ['5. METAS - CAMPO ATIVO'],
+        ['   Use "Sim" para ativa ou "Não" para inativa'],
+        [''],
+        ['6. LINHA DE EXEMPLO'],
+        ['   A primeira linha de cada aba tem um exemplo preenchido'],
+        ['   A segunda linha mostra as opções válidas'],
+        ['   Você pode apagar essas linhas antes de importar'],
+        [''],
+        ['7. IMPORTAR'],
+        ['   Preencha os dados nas abas Receitas, Gastos e Metas'],
+        ['   Salve o arquivo'],
+        ['   No sistema, clique em "📂 Importar Excel"'],
+        ['   Selecione este arquivo'],
+        [''],
+        ['⚠️ IMPORTANTE:'],
+        ['   - Não altere os nomes das colunas (cabeçalhos)'],
+        ['   - Não altere os nomes das abas'],
+        ['   - Mantenha a ordem das colunas'],
+        ['   - Linhas vazias serão ignoradas'],
+    ]
+    
+    for row in instrucoes:
+        ws_instrucoes.append(row)
+    
+    # Estilizar cabeçalhos
+    for ws in [ws_receitas, ws_gastos, ws_metas]:
+        for cell in ws[1]:
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="667eea", end_color="667eea", fill_type="solid")
+            cell.alignment = Alignment(horizontal="center")
+        # Linha de exemplo em amarelo
+        for cell in ws[2]:
+            cell.fill = PatternFill(start_color="FFF9C4", end_color="FFF9C4", fill_type="solid")
+        # Linha de instruções em cinza claro
+        for cell in ws[3]:
+            cell.fill = PatternFill(start_color="F5F5F5", end_color="F5F5F5", fill_type="solid")
+            cell.font = Font(italic=True, size=9)
+    
+    # Estilizar instruções
+    ws_instrucoes['A1'].font = Font(bold=True, size=14, color="667eea")
+    for row in ws_instrucoes.iter_rows(min_row=3):
+        if row[0].value and row[0].value.startswith('   '):
+            row[0].font = Font(size=10)
+        elif row[0].value and any(x in str(row[0].value) for x in ['1.', '2.', '3.', '4.', '5.', '6.', '7.']):
+            row[0].font = Font(bold=True, size=11)
+        elif row[0].value and '⚠️' in str(row[0].value):
+            row[0].font = Font(bold=True, size=11, color="FF0000")
+    
+    # Ajustar largura das colunas
+    for ws in [ws_receitas, ws_gastos, ws_metas]:
+        ws.column_dimensions['A'].width = 12
+        ws.column_dimensions['B'].width = 30
+        ws.column_dimensions['C'].width = 12
+        ws.column_dimensions['D'].width = 20
+        ws.column_dimensions['E'].width = 30
+        ws.column_dimensions['F'].width = 20
+    
+    ws_instrucoes.column_dimensions['A'].width = 80
+    
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='modelo_importacao.xlsx'
+    )
+
 @app.route('/api/importar/excel', methods=['POST'])
 @login_required
 def importar_excel():

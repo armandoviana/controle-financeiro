@@ -81,13 +81,18 @@ def cadastro():
     if request.method == 'POST':
         try:
             data = request.json
+            print(f"📥 Dados recebidos: {data}")  # DEBUG
+            
             username = data.get('username', data.get('usuario', '')).strip()
             senha = data.get('senha', '')
             confirmar_senha = data.get('confirmar_senha', '')
             email = data.get('email', '').strip()
             
+            print(f"📝 Username: {username}, Senha: {'***' if senha else 'vazio'}, Email: {email}")  # DEBUG
+            
             # Validações
             if not username or not senha:
+                print("❌ Username ou senha vazios")  # DEBUG
                 return jsonify({'success': False, 'message': 'Usuário e senha são obrigatórios'}), 400
             
             if len(username) < 3:

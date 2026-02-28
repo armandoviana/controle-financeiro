@@ -81,7 +81,7 @@ def cadastro():
     if request.method == 'POST':
         try:
             data = request.json
-            username = data.get('usuario', '').strip()
+            username = data.get('username', data.get('usuario', '')).strip()
             senha = data.get('senha', '')
             confirmar_senha = data.get('confirmar_senha', '')
             email = data.get('email', '').strip()

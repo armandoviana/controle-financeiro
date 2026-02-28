@@ -96,16 +96,22 @@ def cadastro():
                 return jsonify({'success': False, 'message': 'Usuário e senha são obrigatórios'}), 400
             
             if len(username) < 3:
+                print(f"❌ Username muito curto: {len(username)}")  # DEBUG
                 return jsonify({'success': False, 'message': 'Usuário deve ter no mínimo 3 caracteres'}), 400
             
             if len(senha) < 6:
+                print(f"❌ Senha muito curta: {len(senha)}")  # DEBUG
                 return jsonify({'success': False, 'message': 'Senha deve ter no mínimo 6 caracteres'}), 400
             
             if senha != confirmar_senha:
+                print(f"❌ Senhas não coincidem")  # DEBUG
                 return jsonify({'success': False, 'message': 'As senhas não coincidem'}), 400
             
             # Verificar se username já existe
-            if User.query.filter_by(username=username).first():
+            existing_user = User.query.filter_by(username=username).first()
+            print(f"🔍 Usuário existente: {existing_user}")  # DEBUG
+            if existing_user:
+                print(f"❌ Username já existe: {username}")  # DEBUG
                 return jsonify({'success': False, 'message': 'Username já está em uso'}), 400
             
             # Criar usuário

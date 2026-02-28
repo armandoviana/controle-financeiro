@@ -40,6 +40,15 @@ def create_app(config_class=Config):
     def health():
         return {'status': 'healthy', 'version': '2.4.0'}, 200
     
+    # Endpoint temporário para criar tabelas (remover após uso)
+    @app.route('/init-db')
+    def init_db():
+        try:
+            db.create_all()
+            return {'status': 'success', 'message': 'Tabelas criadas!'}, 200
+        except Exception as e:
+            return {'status': 'error', 'message': str(e)}, 500
+    
     # APIs com serviços reais
     from app.utils.decorators import login_required, api_error_handler
     from app.services.dashboard_service import obter_resumo, obter_evolucao

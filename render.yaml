@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: controle-financeiro
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt && flask db upgrade
+    startCommand: gunicorn run:app --workers 2 --threads 2 --timeout 60
+    envVars:
+      - key: FLASK_DEBUG
+        value: False
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SECRET_KEY
+        generateValue: true
+    
+databases:
+  - name: controle-financeiro-db
+    databaseName: controle_financeiro
+    user: controle_financeiro_user
+    plan: free

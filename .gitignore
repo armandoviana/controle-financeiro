@@ -16,6 +16,15 @@ ENV/
 *.db
 *.sqlite
 *.sqlite3
+instance/
+
+# Flask
+.env
+.flaskenv
+
+# Migrations (manter estrutura, ignorar versões)
+migrations/versions/*.py
+!migrations/versions/__init__.py
 
 # Logs
 *.log
@@ -36,9 +45,13 @@ Thumbs.db
 *.bak
 *~
 *.old
+old_backup/
+backups/
 
-# Docs temporários
+# Node (caso adicione futuramente)
+node_modules/
+package-lock.json
+
+# Temporários
 testar_*.py
-
-# Kiro CLI
 controlefin

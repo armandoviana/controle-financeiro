@@ -1,20 +1,19 @@
 # 💰 Controle Financeiro
 
-Criei esse sistema porque estava cansado de planilhas confusas e apps cheios de anúncios. É simples, direto e faz o que precisa fazer.
+Sistema web completo de controle financeiro pessoal. Simples, direto e profissional.
 
-## O que tem aqui
+## Funcionalidades
 
-Você consegue:
-- Ver quanto entra e sai de dinheiro todo mês
-- Cadastrar gastos fixos (aluguel, internet, Netflix) que se repetem sozinhos
-- Acompanhar se está gastando mais que o normal
-- Criar metas pra juntar grana
-- Filtrar gastos por mês específico
-- Ver gráficos interativos de pizza e evolução mensal
-- Exportar e importar dados em Excel
-- Instalar como app no celular (funciona offline)
-
-O dashboard mostra tudo de forma visual, com gráficos interativos e cards coloridos. Tem loading spinners pra você saber quando está processando. Nada muito complexo, só o necessário pra você não perder o controle.
+- 📊 **Dashboard interativo** com gráficos e resumo mensal
+- 💸 **Gastos recorrentes** com 12 templates prontos (aluguel, Netflix, etc)
+- 🎯 **Metas financeiras** com acompanhamento de progresso
+- 📈 **Previsões inteligentes** baseadas em histórico
+- 🔍 **Filtros por mês** com destaque para gastos fixos
+- 📑 **Relatório IR** com despesas dedutíveis
+- 📊 **Comparação anual** entre anos
+- 📱 **100% responsivo** - funciona perfeitamente no celular
+- 🔐 **Seguro** - bcrypt + rate limiting + session cookies
+- ⚡ **Rápido** - vanilla JS, sem frameworks pesados
 
 ## Como rodar
 
@@ -33,18 +32,24 @@ source venv/bin/activate  # Linux/Mac
 # Instala as dependências
 pip install -r requirements.txt
 
-# Cria o banco de dados
-python3 database.py
+# Cria o banco de dados e primeiro usuário
+python3 criar_usuario.py
 
 # Roda o servidor
-python3 app.py
+python3 run.py
+# ou use: ./start.sh
 ```
 
 Depois é só abrir http://127.0.0.1:5000 no navegador.
 
-### Primeiro acesso
+### Configuração (opcional)
 
-Você precisa configurar usuário e senha no arquivo `app.py`. Tem uma função `hash_senha()` lá que gera o hash da sua senha. Rode ela uma vez e cole o resultado no código.
+Crie um arquivo `.env` (copie do `.env.example`):
+```bash
+FLASK_DEBUG=True  # False em produção
+SECRET_KEY=sua-chave-secreta-aqui
+# DATABASE_URL=postgresql://...  # Opcional, usa SQLite se não definido
+```
 
 ## Principais funcionalidades
 
@@ -72,25 +77,51 @@ Funciona bem no celular. O menu fica embaixo, igual apps tipo Instagram ou Whats
 
 ## Tecnologias
 
-Usei Flask porque é simples e direto. O banco é SQLite localmente, mas suporta PostgreSQL em produção pra dados persistentes. O frontend é HTML, CSS e JavaScript puro, sem frameworks pesados que deixam tudo lento.
+**Backend:**
+- Flask 3.0 (Python web framework)
+- SQLAlchemy (ORM)
+- Flask-Migrate (migrations)
+- Bcrypt (hash de senhas)
+- Flask-Limiter (rate limiting)
+- Gunicorn (WSGI server)
 
-O visual tem uns efeitos de vidro (glassmorphism) e gradientes roxos. Achei bonito e moderno sem ser exagerado.
+**Frontend:**
+- HTML5 + CSS3 (Glassmorphism design)
+- JavaScript Vanilla (sem frameworks)
+- Chart.js 4.4 (gráficos interativos)
+- Service Worker (PWA/offline)
 
-Os gráficos usam Chart.js 4.4 - leve, rápido e bonito. O PWA usa Service Worker pra cache offline.
+**Database:**
+- SQLite (desenvolvimento)
+- PostgreSQL (produção)
+
+**Deploy:**
+- Render.com (free tier)
+- Git-based deployment
 
 ## Segurança
 
-Tem login com senha (hash SHA-256), limite de tentativas, e uns headers de segurança básicos. Nada super avançado tipo banco, mas protege o essencial pra uso pessoal.
+- **Bcrypt** para hash de senhas (substituiu SHA-256)
+- **Rate limiting** - 10 tentativas/min no login, 200 req/dia global
+- **Session cookies** seguros com httponly
+- **Security headers** (X-Frame-Options, X-XSS-Protection)
+- **User isolation** - cada usuário vê apenas seus dados
+- **CSRF protection** via Flask
 
-## Ideias futuras
+## Arquitetura
 
-Talvez eu adicione:
-- Comparação ano a ano
-- Integração com banco (Open Banking)
-- Notificações push
-- Modo escuro persistente
+**Factory Pattern** com Flask blueprints:
+- `app/routes/` - Endpoints organizados por funcionalidade
+- `app/services/` - Lógica de negócio isolada
+- `app/models/` - SQLAlchemy ORM models
+- `app/utils/` - Decorators e helpers compartilhados
 
-Mas por enquanto está funcionando bem do jeito que está. Prefiro manter simples.
+**Modelos:**
+- User (bcrypt password)
+- Receita (income)
+- Gasto (expense)
+- Meta (goals)
+- GastoRecorrente (recurring expenses)
 
 ## Licença
 

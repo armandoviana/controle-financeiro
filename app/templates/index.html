@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Sistema de controle financeiro pessoal">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='80'>💰</text></svg>">
+    <title>Controle Financeiro</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- CSS Original (mantido para compatibilidade) -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <style>
+        /* Melhorias com Tailwind */
+        @layer utilities {
+            .glass-effect {
+                @apply bg-white/10 backdrop-blur-md border border-white/20;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:scale-105 hover:shadow-2xl;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div>
+            <div class="spinner"></div>
+            <div class="loading-text">Carregando...</div>
+        </div>
+    </div>
+
+    <!-- Menu Lateral -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">💰</div>
+            <h2>Controle Financeiro</h2>
+        </div>
+        
+        <ul class="menu">
+            <li class="menu-item active" onclick="navigateTo('dashboard')">
+                <span class="menu-icon">📊</span>
+                <span class="menu-text">Dashboard</span>
+            </li>
+            <li class="menu-item" onclick="navigateTo('adicionar')">
+                <span class="menu-icon">➕</span>
+                <span class="menu-text">Adicionar</span>
+            </li>
+            <li class="menu-item" onclick="navigateTo('recorrentes')">
+                <span class="menu-icon">🔄</span>
+                <span class="menu-text">Recorrentes</span>
+            </li>
+            <li class="menu-item" onclick="navigateTo('metas')">
+                <span class="menu-icon">🎯</span>
+                <span class="menu-text">Metas</span>
+            </li>
+            <li class="menu-item" onclick="navigateTo('previsoes')">
+                <span class="menu-icon">🔮</span>
+                <span class="menu-text">Previsões</span>
+            </li>
+            <li class="menu-item" onclick="navigateTo('insights')">
+                <span class="menu-icon">💡</span>
+                <span class="menu-text">Insights</span>
+            </li>
+            <li class="menu-item" onclick="navigateTo('historico')">
+                <span class="menu-icon">📜</span>
+                <span class="menu-text">Histórico</span>
+            </li>
+            <li class="menu-item" onclick="navigateTo('relatorio-ir')">
+                <span class="menu-icon">📋</span>
+                <span class="menu-text">Relatório IR</span>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <button class="btn-icon-sidebar" onclick="toggleTheme()" title="Tema">🌙</button>
+            <button class="btn-icon-sidebar" onclick="window.open('/api/exportar/modelo-excel', '_blank')" title="📥 Baixar Modelo">📝</button>
+            <button class="btn-icon-sidebar" onclick="exportarExcel()" title="Exportar Excel">📊</button>
+            <button class="btn-icon-sidebar" onclick="document.getElementById('importarExcel').click()" title="Importar Excel">📂</button>
+            <button class="btn-icon-sidebar" onclick="logout()" title="Sair">🚪</button>
+            <input type="file" id="importarExcel" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(this)">
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+        <!-- DASHBOARD -->
+        <section id="page-dashboard" class="page active">
+            <header class="page-header">
+                <div>
+                    <h1>Olá! 👋</h1>
+                    <p class="subtitle">Aqui está seu resumo financeiro</p>
+                </div>
+                <div class="header-date">
+                    <span id="current-date"></span>
+                </div>
+            </header>
+
+            <div class="resumo-cards">
+                <div class="card-grande receitas">
+                    <div class="card-icon-grande">💵</div>
+                    <div class="card-info">
+                        <h3>Receitas Totais</h3>
+                        <p class="valor-grande" id="dash-receitas">R$ 0,00</p>
+                        <span class="card-badge success">+100%</span>
+                    </div>
+                </div>
+                
+                <div class="card-grande gastos">
+                    <div class="card-icon-grande">💸</div>
+                    <div class="card-info">
+                        <h3>Gastos Totais</h3>
+                        <p class="valor-grande" id="dash-gastos">R$ 0,00</p>
+                        <span class="card-badge danger" id="badge-gastos">0%</span>
+                    </div>
+                </div>
+                
+                <div class="card-grande saldo">
+                    <div class="card-icon-grande">💎</div>
+                    <div class="card-info">
+                        <h3>Saldo Disponível</h3>
+                        <p class="valor-grande" id="dash-saldo">R$ 0,00</p>
+                        <span class="card-badge info" id="badge-saldo">Disponível</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="widget resumo-mensal">
+                    <h3>📅 Resumo do Mês</h3>
+                    <div id="resumo-mensal-container">
+                        <div class="resumo-item">
+                            <span class="resumo-label">💸 Gastos Fixos</span>
+                            <span class="resumo-valor" id="resumo-fixos">R$ 0,00</span>
+                        </div>
+                        <div class="resumo-item">
+                            <span class="resumo-label">🛒 Gastos Variáveis</span>
+                            <span class="resumo-valor" id="resumo-variaveis">R$ 0,00</span>
+                        </div>
+                        <div class="resumo-item total">
+                            <span class="resumo-label">📊 Total do Mês</span>
+                            <span class="resumo-valor" id="resumo-total-mes">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="widget saude-financeira">
+                    <h3>🏥 Saúde Financeira</h3>
+                    <div class="saude-score">
+                        <div class="score-circle">
+                            <svg viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" class="score-bg"></circle>
+                                <circle cx="50" cy="50" r="45" class="score-progress" id="score-circle"></circle>
+                            </svg>
+                            <div class="score-text" id="score-value">0</div>
+                        </div>
+                        <p class="score-label" id="score-label">Calculando...</p>
+                    </div>
+                </div>
+
+                <div class="widget comparacao-mensal">
+                    <h3>📈 Comparação Mensal</h3>
+                    <div id="comparacao-container"></div>
+                </div>
+
+                <div class="widget dicas-rapidas">
+                    <h3>💡 Dicas Rápidas</h3>
+                    <div id="dicas-container"></div>
+                </div>
+
+                <div class="widget distribuicao">
+                    <h3>📊 Distribuição de Gastos</h3>
+                    <div class="chart-bars" id="chart-gastos"></div>
+                </div>
+
+                <div class="widget distribuicao-pizza">
+                    <h3>🥧 Gráfico de Pizza</h3>
+                    <canvas id="chart-pizza"></canvas>
+                </div>
+
+                <div class="widget evolucao-temporal">
+                    <h3>📉 Evolução (6 meses)</h3>
+                    <canvas id="chart-evolucao"></canvas>
+                </div>
+
+                <div class="widget alertas-widget">
+                    <h3>🔔 Alertas</h3>
+                    <div id="alertas-container"></div>
+                </div>
+
+                <div class="widget metas-preview">
+                    <h3>🎯 Metas Ativas</h3>
+                    <div id="metas-preview-container"></div>
+                </div>
+
+                <div class="widget comparacao-anos">
+                    <h3>📊 Comparação Ano a Ano</h3>
+                    <div id="comparacao-anos-container">
+                        <div class="comparacao-loading">Carregando...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- METAS -->
+        <section id="page-metas" class="page">
+            <header class="page-header">
+                <h1>Metas Financeiras 🎯</h1>
+                <p class="subtitle">Defina e acompanhe suas metas</p>
+            </header>
+
+            <button class="btn-nova-meta" onclick="abrirModalMeta()">
+                <span>➕ Nova Meta</span>
+            </button>
+
+            <div class="metas-grid" id="metas-container"></div>
+
+            <!-- Modal Nova Meta -->
+            <div id="modal-meta" class="modal">
+                <div class="modal-content">
+                    <span class="modal-close" onclick="fecharModalMeta()">&times;</span>
+                    <h2>🎯 Nova Meta</h2>
+                    <form id="form-meta" class="form-modern">
+                        <div class="input-modern">
+                            <label>📝 Título da Meta</label>
+                            <input type="text" id="meta-titulo" placeholder="Ex: Viagem de férias" required>
+                        </div>
+                        
+                        <div class="input-row-modern">
+                            <div class="input-modern">
+                                <label>💰 Valor Alvo</label>
+                                <input type="number" id="meta-valor-alvo" placeholder="0,00" step="0.01" required>
+                            </div>
+                            <div class="input-modern">
+                                <label>💵 Valor Atual</label>
+                                <input type="number" id="meta-valor-atual" placeholder="0,00" step="0.01" value="0">
+                            </div>
+                        </div>
+
+                        <div class="input-row-modern">
+                            <div class="input-modern">
+                                <label>📅 Data Início</label>
+                                <input type="date" id="meta-data-inicio" required>
+                            </div>
+                            <div class="input-modern">
+                                <label>📅 Data Fim</label>
+                                <input type="date" id="meta-data-fim" required>
+                            </div>
+                        </div>
+
+                        <div class="input-modern">
+                            <label>🏷️ Tipo</label>
+                            <select id="meta-tipo" required>
+                                <option value="economia">💰 Economia</option>
+                                <option value="investimento">📈 Investimento</option>
+                                <option value="compra">🛍️ Compra</option>
+                                <option value="viagem">✈️ Viagem</option>
+                                <option value="outro">📌 Outro</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn-submit">
+                            <span>Criar Meta</span>
+                            <span class="btn-arrow">→</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- GASTOS RECORRENTES -->
+        <section id="page-recorrentes" class="page">
+            <header class="page-header">
+                <h1>🔄 Gastos Recorrentes</h1>
+                <p class="subtitle">Configure gastos fixos mensais</p>
+            </header>
+
+            <div class="recorrentes-actions">
+                <button class="btn-nova-meta" onclick="abrirModalRecorrente()">
+                    <span>➕ Novo Recorrente</span>
+                </button>
+                <button class="btn-gerar-recorrentes" onclick="gerarRecorrentes()">
+                    <span>⚡ Gerar Gastos do Mês</span>
+                </button>
+            </div>
+
+            <div class="templates-recorrentes">
+                <h3>📋 Templates Comuns</h3>
+                <div class="templates-grid">
+                    <div class="template-card" onclick="usarTemplate('Aluguel', 1500, 'Moradia', 5)">
+                        <span class="template-icon">🏠</span>
+                        <span class="template-nome">Aluguel</span>
+                    </div>
+                    <div class="template-card" onclick="usarTemplate('Internet', 100, 'Moradia', 10)">
+                        <span class="template-icon">🌐</span>
+                        <span class="template-nome">Internet</span>
+                    </div>
+                    <div class="template-card" onclick="usarTemplate('Luz', 150, 'Moradia', 15)">
+                        <span class="template-icon">💡</span>
+                        <span class="template-nome">Luz</span>
+                    </div>
+                    <div class="template-card" onclick="usarTemplate('Água', 80, 'Moradia', 15)">
+                        <span class="template-icon">💧</span>
+                        <span class="template-nome">Água</span>
+                    </div>
+                    <div class="template-card" onclick="usarTemplate('Gás', 70, 'Moradia', 20)">
+                        <span class="template-icon">🔥</span>
+                        <span class="template-nome">Gás</span>
+                    </div>
+                    <div class="template-card" onclick="usarTemplate('Netflix', 40, 'Lazer', 10)">
+                        <span class="template-icon">📺</span>
+                        <span class="template-nome">Netflix</span>
+                    </div>
+                    <div class="template-card" onclick="usarTemplate('Spotify', 20, 'Lazer', 10)">
+                        <span class="template-icon">🎵</span>
+                        <span class="template-nome">Spotify</span>
+                    </div>
+                    <div class="template-card" onclick="usarTemplate('Academia', 100, 'Saúde', 5)">
+                        <span class="template-icon">💪</span>
+                        <span class="template-nome">Academia</span>
+                    </div>
+                    <div class="template-card" onclick="usarTemplate('Plano de Saúde', 300, 'Saúde', 10)">
+                        <span class="template-icon">🏥</span>
+                        <span class="template-nome">Plano Saúde</span>
+                    </div>
+                    <div class="template-card" onclick="usarTemplate('Transporte Público', 200, 'Transporte', 1)">
+                        <span class="template-icon">🚌</span>
+                        <span class="template-nome">Transporte</span>
+                    </div>
+                    <div class="template-card" onclick="usarTemplate('Condomínio', 400, 'Moradia', 10)">
+                        <span class="template-icon">🏢</span>
+                        <span class="template-nome">Condomínio</span>
+                    </div>
+                    <div class="template-card" onclick="usarTemplate('Celular', 60, 'Outros', 15)">
+                        <span class="template-icon">📱</span>
+                        <span class="template-nome">Celular</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recorrentes-lista" id="recorrentes-container"></div>
+
+            <!-- Modal Novo Recorrente -->
+            <div id="modal-recorrente" class="modal">
+                <div class="modal-content">
+                    <span class="modal-close" onclick="fecharModalRecorrente()">&times;</span>
+                    <h2>🔄 Novo Gasto Recorrente</h2>
+                    <form id="form-recorrente" class="form-modern">
+                        <div class="input-modern">
+                            <label>📝 Descrição</label>
+                            <input type="text" id="rec-descricao" placeholder="Ex: Aluguel" required>
+                        </div>
+                        
+                        <div class="input-row-modern">
+                            <div class="input-modern">
+                                <label>💰 Valor</label>
+                                <input type="text" id="rec-valor" placeholder="0,00" required>
+                            </div>
+                            <div class="input-modern">
+                                <label>📅 Dia Vencimento</label>
+                                <input type="number" id="rec-dia" min="1" max="28" placeholder="5" required>
+                            </div>
+                        </div>
+
+                        <div class="input-modern">
+                            <label>🏷️ Categoria</label>
+                            <select id="rec-categoria" required>
+                                <option value="Alimentação">🍔 Alimentação</option>
+                                <option value="Transporte">🚗 Transporte</option>
+                                <option value="Moradia">🏠 Moradia</option>
+                                <option value="Saúde">💊 Saúde</option>
+                                <option value="Lazer">🎮 Lazer</option>
+                                <option value="Educação">📚 Educação</option>
+                                <option value="Outros">📦 Outros</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn-submit">
+                            <span>Adicionar Recorrente</span>
+                            <span class="btn-arrow">→</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADICIONAR -->
+        <section id="page-adicionar" class="page">
+            <header class="page-header">
+                <h1>Adicionar Transação ➕</h1>
+                <p class="subtitle">Escolha o tipo de transação</p>
+            </header>
+
+            <div class="tipo-selector">
+                <button class="tipo-btn active" onclick="selectTipo('receita')">
+                    <span class="tipo-icon">💵</span>
+                    <span>Receita</span>
+                </button>
+                <button class="tipo-btn" onclick="selectTipo('gasto')">
+                    <span class="tipo-icon">💸</span>
+                    <span>Gasto</span>
+                </button>
+            </div>
+
+            <div class="form-container">
+                <!-- Formulário Receita -->
+                <div id="form-receita-container" class="form-card active">
+                    <h2>💵 Nova Receita</h2>
+                    <form id="form-receita" class="form-modern">
+                        <div class="input-modern">
+                            <label>💬 Descrição</label>
+                            <input type="text" id="receita-desc" placeholder="Ex: Salário de Fevereiro" required>
+                        </div>
+                        
+                        <div class="input-row-modern">
+                            <div class="input-modern">
+                                <label>💰 Valor</label>
+                                <input type="text" id="receita-valor" placeholder="0,00" required>
+                            </div>
+                            <div class="input-modern">
+                                <label>📅 Data</label>
+                                <input type="date" id="receita-data" required>
+                            </div>
+                        </div>
+
+                        <div class="input-modern">
+                            <label>🏷️ Tipo</label>
+                            <div class="radio-group">
+                                <label class="radio-card">
+                                    <input type="radio" name="receita-tipo" value="Salário" required>
+                                    <span class="radio-content">
+                                        <span class="radio-icon">💼</span>
+                                        <span>Salário</span>
+                                    </span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="receita-tipo" value="Freelance">
+                                    <span class="radio-content">
+                                        <span class="radio-icon">💻</span>
+                                        <span>Freelance</span>
+                                    </span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="receita-tipo" value="Cartão Benefício">
+                                    <span class="radio-content">
+                                        <span class="radio-icon">🎫</span>
+                                        <span>Benefício</span>
+                                    </span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="receita-tipo" value="Outras Rendas">
+                                    <span class="radio-content">
+                                        <span class="radio-icon">💰</span>
+                                        <span>Outras</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="input-modern">
+                            <label>📝 Notas (opcional)</label>
+                            <textarea id="receita-notas" placeholder="Observações adicionais..." rows="2"></textarea>
+                        </div>
+
+                        <div class="input-modern">
+                            <label>🏷️ Tags (opcional)</label>
+                            <input type="text" id="receita-tags" placeholder="Ex: trabalho, extra" list="tags-list">
+                            <datalist id="tags-list"></datalist>
+                        </div>
+
+                        <button type="submit" class="btn-submit">
+                            <span>Adicionar Receita</span>
+                            <span class="btn-arrow">→</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Formulário Gasto -->
+                <div id="form-gasto-container" class="form-card">
+                    <h2>💸 Novo Gasto</h2>
+                    <form id="form-gasto" class="form-modern">
+                        <div class="input-modern">
+                            <label>💬 Descrição</label>
+                            <input type="text" id="gasto-desc" placeholder="Ex: Conta de luz" required>
+                        </div>
+                        
+                        <div class="input-row-modern">
+                            <div class="input-modern">
+                                <label>💰 Valor</label>
+                                <input type="text" id="gasto-valor" placeholder="0,00" required>
+                            </div>
+                            <div class="input-modern">
+                                <label>📅 Data</label>
+                                <input type="date" id="gasto-data" required>
+                            </div>
+                        </div>
+
+                        <div class="input-modern">
+                            <label>🏷️ Categoria</label>
+                            <div class="radio-group">
+                                <label class="radio-card">
+                                    <input type="radio" name="gasto-categoria" value="Alimentação" required>
+                                    <span class="radio-content">
+                                        <span class="radio-icon">🍔</span>
+                                        <span>Alimentação</span>
+                                    </span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="gasto-categoria" value="Transporte">
+                                    <span class="radio-content">
+                                        <span class="radio-icon">🚗</span>
+                                        <span>Transporte</span>
+                                    </span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="gasto-categoria" value="Moradia">
+                                    <span class="radio-content">
+                                        <span class="radio-icon">🏠</span>
+                                        <span>Moradia</span>
+                                    </span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="gasto-categoria" value="Saúde">
+                                    <span class="radio-content">
+                                        <span class="radio-icon">💊</span>
+                                        <span>Saúde</span>
+                                    </span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="gasto-categoria" value="Lazer">
+                                    <span class="radio-content">
+                                        <span class="radio-icon">🎮</span>
+                                        <span>Lazer</span>
+                                    </span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="gasto-categoria" value="Educação">
+                                    <span class="radio-content">
+                                        <span class="radio-icon">📚</span>
+                                        <span>Educação</span>
+                                    </span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="gasto-categoria" value="Outros">
+                                    <span class="radio-content">
+                                        <span class="radio-icon">📦</span>
+                                        <span>Outros</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="input-modern">
+                            <label>📝 Notas (opcional)</label>
+                            <textarea id="gasto-notas" placeholder="Observações adicionais..." rows="2"></textarea>
+                        </div>
+
+                        <div class="input-modern">
+                            <label>🏷️ Tags (opcional)</label>
+                            <input type="text" id="gasto-tags" placeholder="Ex: urgente, parcelado" list="tags-list">
+                        </div>
+
+                        <div class="input-modern">
+                            <label>📎 Comprovante (opcional)</label>
+                            <input type="file" id="gasto-comprovante" accept="image/*" onchange="previewComprovante(event)">
+                            <div id="preview-comprovante" class="preview-img"></div>
+                        </div>
+
+                        <button type="submit" class="btn-submit">
+                            <span>Adicionar Gasto</span>
+                            <span class="btn-arrow">→</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- INSIGHTS -->
+        <section id="page-insights" class="page">
+            <header class="page-header">
+                <h1>Insights Financeiros 💡</h1>
+                <p class="subtitle">Análises inteligentes das suas finanças</p>
+            </header>
+
+            <div class="metricas-grid">
+                <div class="metrica-card-nova comprometimento">
+                    <div class="metrica-header-nova">
+                        <h3>📊 Renda Comprometida</h3>
+                        <span class="metrica-icon-nova">💳</span>
+                    </div>
+                    <div class="metrica-valor-nova" id="percentual-comprometido">0%</div>
+                    <div class="metrica-barra-nova">
+                        <div class="metrica-progresso-nova" id="barra-comprometimento"></div>
+                    </div>
+                    <p class="metrica-desc-nova" id="desc-comprometimento">Calculando...</p>
+                </div>
+
+                <div class="metrica-card-nova economia">
+                    <div class="metrica-header-nova">
+                        <h3>💰 Capacidade de Economia</h3>
+                        <span class="metrica-icon-nova">🎯</span>
+                    </div>
+                    <div class="metrica-valor-nova" id="percentual-economia">0%</div>
+                    <div class="metrica-barra-nova">
+                        <div class="metrica-progresso-nova economia-bar" id="barra-economia"></div>
+                    </div>
+                    <p class="metrica-desc-nova" id="desc-economia">Calculando...</p>
+                </div>
+
+                <div class="metrica-card-nova media">
+                    <div class="metrica-header-nova">
+                        <h3>📈 Gasto Médio Diário</h3>
+                        <span class="metrica-icon-nova">📅</span>
+                    </div>
+                    <div class="metrica-valor-nova" id="gasto-medio-dia">R$ 0,00</div>
+                    <p class="metrica-desc-nova">Últimos 30 dias</p>
+                </div>
+
+                <div class="metrica-card-nova projecao">
+                    <div class="metrica-header-nova">
+                        <h3>🔮 Projeção Mensal</h3>
+                        <span class="metrica-icon-nova">📊</span>
+                    </div>
+                    <div class="metrica-valor-nova" id="projecao-mensal">R$ 0,00</div>
+                    <p class="metrica-desc-nova" id="desc-projecao">Calculando...</p>
+                </div>
+            </div>
+
+            <div class="insights-list">
+                <h2>💡 Análises Detalhadas</h2>
+                <div id="insights-container"></div>
+            </div>
+        </section>
+
+        <!-- HISTÓRICO -->
+        <section id="page-historico" class="page">
+            <header class="page-header">
+                <h1>Histórico de Transações 📜</h1>
+                <p class="subtitle">Todas as suas receitas e gastos</p>
+            </header>
+
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <input type="text" id="busca-historico" class="busca-historico" placeholder="🔍 Buscar transações..." onkeyup="filtrarHistorico()" style="flex: 1; min-width: 250px;">
+                <input type="month" id="filtro-mes" class="input-mes-filtro" onchange="filtrarPorMes()" style="padding: 0.75rem 1rem; border-radius: 12px; border: 2px solid #e0e0e0; font-size: 1rem;">
+                <button class="btn-filtro" onclick="limparFiltroMes()" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;">🔄 Todos</button>
+            </div>
+
+            <div class="historico-grid">
+                <div class="lista-moderna">
+                    <div class="lista-header-moderna">
+                        <h2>💵 Receitas</h2>
+                        <span class="lista-count-moderna" id="count-receitas">0 itens</span>
+                    </div>
+                    <div id="lista-receitas" class="lista-items-moderna"></div>
+                </div>
+
+                <div class="lista-moderna">
+                    <div class="lista-header-moderna">
+                        <h2>💸 Gastos</h2>
+                        <span class="lista-count-moderna" id="count-gastos">0 itens</span>
+                        <span class="lista-count-moderna" id="count-gastos-fixos" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); margin-left: 0.5rem;">0 fixos</span>
+                    </div>
+                    <div id="lista-gastos" class="lista-items-moderna"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PREVISÕES -->
+        <section id="page-previsoes" class="page">
+            <header class="page-header">
+                <h1>🔮 Previsões Inteligentes</h1>
+                <p class="subtitle">Projeções baseadas no seu histórico</p>
+            </header>
+
+            <div class="previsoes-grid" id="previsoes-container"></div>
+        </section>
+
+        <!-- RELATÓRIO IR -->
+        <section id="page-relatorio-ir" class="page">
+            <header class="page-header">
+                <h1>📋 Relatório Imposto de Renda</h1>
+                <p class="subtitle">Dados para declaração anual</p>
+            </header>
+
+            <div class="ir-controls">
+                <select id="ir-ano" onchange="carregarRelatorioIR()">
+                    <option value="2026">2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                </select>
+                <button class="btn-nova-meta" onclick="exportarRelatorioIR()">
+                    <span>📄 Exportar PDF</span>
+                </button>
+            </div>
+
+            <div class="ir-resumo">
+                <div class="card-grande receitas">
+                    <div class="card-icon-grande">💰</div>
+                    <div class="card-info">
+                        <h3>Receitas Tributáveis</h3>
+                        <p class="valor-grande" id="ir-receitas">R$ 0,00</p>
+                        <span class="card-badge info">Salário + Freelance</span>
+                    </div>
+                </div>
+                
+                <div class="card-grande gastos">
+                    <div class="card-icon-grande">📉</div>
+                    <div class="card-info">
+                        <h3>Despesas Dedutíveis</h3>
+                        <p class="valor-grande" id="ir-deducoes">R$ 0,00</p>
+                        <span class="card-badge success">Saúde + Educação</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ir-detalhes">
+                <h3>📊 Detalhamento de Despesas Dedutíveis</h3>
+                <div id="ir-detalhes-container"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Funções críticas inline para evitar problemas de cache -->
+    <script>
+        window.abrirModalRecorrente = function() {
+            const modal = document.getElementById('modal-recorrente');
+            if (modal) {
+                modal.classList.add('active');
+                modal.style.display = 'flex';
+            }
+        }
+        
+        window.fecharModalRecorrente = function() {
+            const modal = document.getElementById('modal-recorrente');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+                const form = document.getElementById('form-recorrente');
+                if (form) form.reset();
+            }
+        }
+    </script>
+
+    <script src="/static/js/script.js?v=2.4.4"></script>
+    <script src="/static/js/script-extras.js?v=2.4.4"></script>
+    <script>
+        // Registra Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/js/service-worker.js')
+                .then(reg => console.log('✅ Service Worker registrado'))
+                .catch(err => console.log('❌ Erro ao registrar SW:', err));
+        }
+    </script>
+</body>
+</html>

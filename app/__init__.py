@@ -44,8 +44,10 @@ def create_app(config_class=Config):
     @app.route('/init-db')
     def init_db():
         try:
+            # Drop e recria todas as tabelas
+            db.drop_all()
             db.create_all()
-            return {'status': 'success', 'message': 'Tabelas criadas!'}, 200
+            return {'status': 'success', 'message': 'Tabelas recriadas com sucesso!'}, 200
         except Exception as e:
             return {'status': 'error', 'message': str(e)}, 500
     

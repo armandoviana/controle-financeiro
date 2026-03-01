@@ -1088,6 +1088,10 @@ function gerarChartEvolucao(receitas, gastos) {
 }
 
 function formatarMoeda(valor) {
+    // Se valor for undefined, null ou NaN, retorna R$ 0,00
+    if (valor === undefined || valor === null || isNaN(valor)) {
+        valor = 0;
+    }
     return new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'}).format(valor);
 }
 

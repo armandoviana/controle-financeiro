@@ -26,9 +26,16 @@ def api_error_handler(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         try:
-            return f(*args, **kwargs)
+            result = f(*args, **kwargs)
+            # Se retornou None, retorna array vazio
+            if result is None or (hasattr(result, 'get_json') and result.get_json() is None):
+                return jsonify([]), 200
+            return result
         except Exception as e:
             print(f"❌ Erro em {f.__name__}: {e}")
             traceback.print_exc()
+            # Para APIs de listagem, retorna array vazio em vez de erro
+            if f.__name__ in ['alertas', 'previsoes', 'tags', 'evolucao']:
+                return jsonify([]), 200
             return jsonify({'success': False, 'message': f'Erro: {str(e)}'}), 500
     return decorated_function

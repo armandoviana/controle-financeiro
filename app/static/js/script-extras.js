@@ -88,7 +88,7 @@ document.getElementById('form-meta')?.addEventListener('submit', async (e) => {
     }
     
     try {
-        const response = await fetch('/api/metas', {
+        const response = await fetch('/api/metas/', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
@@ -116,7 +116,7 @@ document.getElementById('form-meta')?.addEventListener('submit', async (e) => {
 
 async function carregarMetas() {
     try {
-        const metas = await fetch('/api/metas').then(r => r.json());
+        const metas = await fetch('/api/metas/').then(r => r.json());
         
         if (!Array.isArray(metas)) {
             console.error('Dados de metas inválidos');
@@ -257,7 +257,7 @@ async function atualizarMeta(id) {
     }
     
     try {
-        const response = await fetch('/api/metas', {
+        const response = await fetch('/api/metas/', {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ id, valor_atual: valor })
@@ -548,7 +548,7 @@ document.getElementById('form-recorrente')?.addEventListener('submit', async (e)
     }
     
     try {
-        const response = await fetch('/api/recorrentes', {
+        const response = await fetch('/api/recorrentes/', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({descricao: desc, valor, categoria: cat, dia_vencimento: dia})
@@ -621,7 +621,7 @@ if (recValorInput && !recValorInput.parentElement.classList.contains('input-moed
 
 async function carregarRecorrentes() {
     try {
-        const recs = await fetch('/api/recorrentes').then(r => r.json());
+        const recs = await fetch('/api/recorrentes/').then(r => r.json());
         const container = document.getElementById('recorrentes-container');
         if (!container) return;
         

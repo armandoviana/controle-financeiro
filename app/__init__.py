@@ -53,7 +53,8 @@ def create_app(config_class=Config):
     from app.utils.decorators import login_required, api_error_handler
     from app.services.dashboard_service import obter_resumo, obter_evolucao
     from app.services.alertas_service import obter_alertas
-    from app.services.tags_service import obter_tags, obter_relatorio_ir
+    from app.services.tags_service import obter_tags
+    from app.services.relatorio_ir_service import obter_relatorio_ir
     from app.services.previsoes_service import obter_previsoes
     
     @app.route('/api/resumo')

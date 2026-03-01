@@ -857,17 +857,30 @@ function criarItemGasto(g, ehFixo) {
 async function carregarRelatorioIR() {
     try {
         const ano = document.getElementById('ir-ano')?.value || new Date().getFullYear();
-        const ir = await fetch(`/api/relatorio-ir?ano=${ano}`).then(r => r.json());
+        const response = await fetch(`/api/relatorio-ir?ano=${ano}`);
         
-        document.getElementById('ir-receitas').textContent = formatarMoeda(ir.receitas_tributaveis);
-        document.getElementById('ir-deducoes').textContent = formatarMoeda(ir.total_deducoes);
+        if (!response.ok) {
+            console.error('Erro ao carregar relatório IR:', response.status);
+            return;
+        }
+        
+        const ir = await response.json();
+        
+        // Verificar se tem a estrutura correta
+        if (!ir || !ir.resumo) {
+            console.warn('Relatório IR vazio ou sem dados');
+            return;
+        }
+        
+        document.getElementById('ir-receitas').textContent = formatarMoeda(ir.resumo.total_receitas || 0);
+        document.getElementById('ir-deducoes').textContent = formatarMoeda(ir.resumo.total_dedutiveis || 0);
         
         const detalhes = document.getElementById('ir-detalhes-container');
-        if (detalhes) {
-            detalhes.innerHTML = ir.despesas_dedutiveis.map(d => `
+        if (detalhes && ir.gastos_dedutiveis && Array.isArray(ir.gastos_dedutiveis)) {
+            detalhes.innerHTML = ir.gastos_dedutiveis.map(d => `
                 <div class="ir-detalhe-item">
                     <span class="ir-categoria">${d.categoria}</span>
-                    <span class="ir-valor">${formatarMoeda(d.total)}</span>
+                    <span class="ir-valor">${formatarMoeda(d.valor)}</span>
                 </div>
             `).join('');
         }
